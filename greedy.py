@@ -75,11 +75,10 @@ for H in hashmark:
     b = count_dict(context_back[H[k:2*k-1]])
     # pprint(context[(H[0:k-1],H[k:2*k-1])]) # context on both side
     print(f,b)
-    possible = sorted(f+b, key=lambda tup: tup[1])
+    possible = sorted(f+b+[("",0)], key=lambda tup: tup[1])
     most_frequent = possible[-1][0]
-    # I = H[0:k-1]+most_frequent+H[k:2*k-1]
     letter = '#'
-    min_added = k
+    min_added = k+1
     for l in possible:
         I = H[0:k-1]+l[0]+H[k:2*k-1]
         try:
@@ -93,12 +92,18 @@ for H in hashmark:
     print(letter, min_added)
 
     I = H[0:k-1]+letter+H[k:2*k-1]
+    # I = H[0:k-1]+most_frequent+H[k:2*k-1]
+    for it in range(k):
+        if (kmers_occ[I[it:it+k]] in forbiden_patterns):
+            I = I[0:k-1] + "#" + I[k:2*k-1]
+            break
     for it in range(k):
         if (kmers_occ[I[it:it+k]] < tau):
             # print("Unfrequent kmer: ", I[it:it+k])
+            kmers_occ[I[it:it+k]] +=1 # update the count of unfrequent
             unfrequent[I[it:it+k]] += 1
 
 # print the tau ghost created
 for c,v in unfrequent.items():
-    if kmers_occ[c]+v >= tau:
-        print("Tau-ghost: ", c, " occ: ", kmers_occ[c]+v)
+    if kmers_occ[c] >= tau:
+        print("Tau-ghost: ", c, " occ: ", kmers_occ[c])
