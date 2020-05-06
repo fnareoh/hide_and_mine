@@ -67,7 +67,7 @@ while i + k < len(S):
         nb_hashmark += 1
         i += p + 1
 context_hashmark = list(occ_context_hashmark)
-alphabet = list(alphabet)
+alphabet = list(alphabet) + [""]
 
 forbiden_replacement = set()
 critical_kmers = {}
@@ -79,7 +79,7 @@ for i in range(len(context_hashmark)):
     for j in range(len(alphabet)):
         letter = alphabet[j]
         replacement = context[0] + letter + context[1]
-        for start in range(len(replacement) - k):
+        for start in range(len(replacement) - k + 1):
             kmer = replacement[start : start + k]
             if kmer in forbiden_patterns:
                 # kmer is forbiden
@@ -106,8 +106,6 @@ for i in range(len(context_hashmark)):
 list_critical = [""] * nb_critical
 for kmer, order in critical_kmers.items():
     list_critical[order] = kmer
-
-pprint(alpha)
 
 try:
 
@@ -136,6 +134,7 @@ try:
         )
 
     for i in range(len(context_hashmark)):
+        print(occ_context_hashmark[context_hashmark[i]], context_hashmark[i])
         m.addConstr(
             x.sum(i, "*") == occ_context_hashmark[context_hashmark[i]],
             "all hashmark are replaced",
