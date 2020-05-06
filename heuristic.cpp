@@ -135,6 +135,7 @@ std::string minimize_unfrequent(
     Input &input, std::string hashmark,
     std::function<float(Input &, std::string)> unfrequent_measurement) {
   std::map<char, int> candidates;
+  // If the context has never been seen before, look at the entire alphabet
   if (input.context.count(hashmark.substr(0, k - 1)) == 0) {
     for (const char &c : input.alphabet) {
       candidates[c] = 0;
@@ -146,12 +147,15 @@ std::string minimize_unfrequent(
   float nb_unfrequent = unfrequent_measurement(
       input, hashmark.substr(0, k - 1) + hashmark.substr(k, k - 1));
   int min = ((nb_unfrequent == -1) ? 2 * k - 1 : nb_unfrequent);
+  // for each possible replacement, compute the risk of adding tau-ghost
+  // (given by unfrequent_measurement)
   for (std::map<char, int>::iterator it = candidates.begin();
        it != candidates.end(); ++it) {
     nb_unfrequent =
         unfrequent_measurement(input, hashmark.substr(0, k - 1) + it->first +
                                           hashmark.substr(k, k - 1));
-    if (nb_unfrequent == -1) {
+    if (nb_unfrequent ==
+        -1) { // there is a forbiden kmer, not a possible replacement
       continue;
     } else if (nb_unfrequent <= min) {
       min = nb_unfrequent;
@@ -162,7 +166,8 @@ std::string minimize_unfrequent(
       input, hashmark.substr(0, k - 1) + min_char + hashmark.substr(k, k - 1));
   if (nb_unfrequent == -1) {
     // std::cout << "No solution possible!" << std::endl;
-    return hashmark;
+    return hashmark; // There are no possible replacement, we just leave the
+                     // hashmark
   }
   return hashmark.substr(0, k - 1) + min_char + hashmark.substr(k, k - 1);
 }
