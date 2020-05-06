@@ -9,6 +9,7 @@
 int k = 0;
 int tau = 0;
 
+// Data structure for all the information I need
 struct Input {
   std::map<std::string, int> k_frequency;
   std::map<std::string, int> original_k_frequency;
@@ -18,6 +19,7 @@ struct Input {
   std::vector<std::string> hashmark;
 };
 
+// Print function for debugging
 void print_context(std::map<std::string, std::map<char, int>> &context) {
   std::cout << "{" << std::endl;
   for (std::map<std::string, std::map<char, int>>::iterator it =
@@ -34,6 +36,7 @@ void print_context(std::map<std::string, std::map<char, int>> &context) {
   std::cout << "}" << std::endl;
 }
 
+// Print function for debugging
 void print_k_frequency(std::map<std::string, int> k_frequency) {
   std::cout << "[" << std::endl;
   for (std::map<std::string, int>::iterator it = k_frequency.begin();
@@ -46,6 +49,7 @@ void print_k_frequency(std::map<std::string, int> k_frequency) {
   std::cout << "]" << std::endl;
 }
 
+// Returns true if hte string s has any forbiden_pattern, else no
 bool has_forbiden_pattern(Input &input, std::string s) {
   for (int i = 0; i <= s.size() - k; i++) {
     if (input.forbiden_patterns.count(s.substr(i, k)) == 1) {
@@ -55,6 +59,9 @@ bool has_forbiden_pattern(Input &input, std::string s) {
   return false;
 }
 
+// For the hashmark given in input "context"+"#", it chooses amng the allowed
+// replacement (those that don't create forbiden pattern) the one with the
+// highest frequency  in the original string, thus minimizing entropy.
 std::string highest_frequency(Input &input, std::string hashmark) {
   std::map<char, int> candidates;
   if (input.context.count(hashmark.substr(0, k - 1)) == 0) {
@@ -108,6 +115,8 @@ float naive_unfrequent_measure(Input &input, std::string s) {
   return unfrequent;
 }
 
+// returns -1 if there is a forbiden_pattern and else the sum of inverse of
+// distance to tau for all unfrequent kmer
 float unfrequent_distance_to_tau(Input &input, std::string s) {
   float unfrequent = 0;
   for (int i = 0; i <= s.size() - k; i++) {
@@ -119,6 +128,9 @@ float unfrequent_distance_to_tau(Input &input, std::string s) {
   return unfrequent;
 }
 
+// Given a method to compute the quantity/importance of the unfrequent added
+// (the unfrequent_measurement function) it chooses the allowed replacement
+// that minizes it. It is used to avoid code duplication.
 std::string minimize_unfrequent(
     Input &input, std::string hashmark,
     std::function<float(Input &, std::string)> unfrequent_measurement) {
@@ -155,14 +167,18 @@ std::string minimize_unfrequent(
   return hashmark.substr(0, k - 1) + min_char + hashmark.substr(k, k - 1);
 }
 
+// Replacement function for the naive counting of unfrequent
 std::string minimize_unfrequent_naive(Input &input, std::string hashmark) {
   return minimize_unfrequent(input, hashmark, naive_unfrequent_measure);
 }
+// Replacement function for the naive distance to tau
 std::string minimize_unfrequent_distance_to_tau(Input &input,
                                                 std::string hashmark) {
   return minimize_unfrequent(input, hashmark, unfrequent_distance_to_tau);
 }
 
+// update the frequency so far based on the replacement chosen, also report any
+// ghost creation
 int update_frequency_and_count_ghosts(Input &input, std::string replaced) {
   int ghost = 0;
   for (int i = 0; i <= replaced.size() - k; i++) {
@@ -181,6 +197,8 @@ int update_frequency_and_count_ghosts(Input &input, std::string replaced) {
   return ghost;
 }
 
+// Given a replacement function, computes all replacement and output it to a
+// file
 void output(
     Input &input, std::string replacement_name,
     std::function<std::string(Input &input, std::string)> replacement_function,
@@ -222,6 +240,8 @@ void output(
             << std::endl;
 }
 
+// Parse the input and get all informtion needed, occurences of kmer, context
+// etc
 Input parse_input(std::string input_file, std::string forbiden_pattern_file) {
   Input input;
   std::ifstream is(input_file); // open file
