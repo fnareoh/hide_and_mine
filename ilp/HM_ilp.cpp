@@ -98,6 +98,7 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
   while (getline(is_forbiden_patterns, pattern))
     input.forbiden_patterns.insert(pattern);
   input.alphabet.assign(alphabet.begin(), alphabet.end());
+  input.alphabet.push_back('\0');
 
   int hashmark_index = 0;
   input.nb_critical = 0;
@@ -119,8 +120,12 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
            input.context_hashmark_index.begin();
        it != input.context_hashmark_index.end(); ++it) {
     auto context = it->first;
+    string replaced;
     for (int l = 0; l < input.alphabet.size(); l++) {
-      string replaced = context.first + input.alphabet[l] + context.second;
+      if (input.alphabet[l] == '\0')
+        replaced = context.first + context.second;
+      else
+        replaced = context.first + input.alphabet[l] + context.second;
       count_critical(it->second, l, replaced, input);
     }
   }
