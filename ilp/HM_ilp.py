@@ -84,6 +84,7 @@ for i in range(len(context_hashmark)):
             if kmer in forbiden_patterns:
                 # kmer is forbiden
                 forbiden_replacement.add((i, j))
+                break
             elif kmers_occ[kmer] < tau and kmers_occ[kmer] + k * nb_hashmark >= tau:
                 # kmer is critical
                 if kmer in critical_kmers:
@@ -123,7 +124,9 @@ try:
         for j in range(len(alphabet)):
             m.addConstr(x[i, j] >= 0)
 
+    count_forbidden_replacement = [0] * len(context_hashmark)
     for i, j in forbiden_replacement:
+        count_forbidden_replacement[i] += 1
         m.addConstr(x[i, j] == 0, "no sensitive pattern")
 
     for l in range(len(alpha)):
@@ -133,17 +136,15 @@ try:
             "limit occurences or ghost",
         )
 
+    impossible_replacement = 0
     for i in range(len(context_hashmark)):
-        print(occ_context_hashmark[context_hashmark[i]], context_hashmark[i])
-        m.addConstr(
-            x.sum(i, "*") == occ_context_hashmark[context_hashmark[i]],
-            "all hashmark are replaced",
-        )
-    # Add constraint: x + 2 y + 3 z <= 4
-    # m.addConstr(x <= 4, "c0 ")
-
-    # Add constraint: x + y >= 1
-    # m.addConstr(x + y >= 1, "c1")
+        if count_forbidden_replacement[i] < len(alphabet):
+            m.addConstr(
+                x.sum(i, "*") == occ_context_hashmark[context_hashmark[i]],
+                "all hashmark are replaced",
+            )
+        else:
+            impossible_replacement += 1
 
     # Optimize model
     m.optimize()

@@ -21,6 +21,7 @@ struct Input {
   // map instead of unordered map because hashes of pair are not defined
   map<pair<string, string>, int> context_hashmark_index;
   vector<int> context_hashmark_count;
+  vector<string> hashmark;
   int nb_hashmark;
   int nb_critical;
   map<string, int> criticals_index;
@@ -30,16 +31,19 @@ struct Input {
 };
 
 bool is_critical(string kmer, Input &input) {
+  if (input.kmers_frequency.count(kmer) == 0)
+    input.kmers_frequency[kmer] = 0;
   return (input.kmers_frequency[kmer] < tau &&
           input.kmers_frequency[kmer] + k * input.nb_hashmark >= tau);
 }
 
-void count_critical(int i_, int j_, string replaced, Input &input) {
+int count_critical(int i_, int j_, string replaced, Input &input) {
   for (int it = 0; it <= replaced.size() - k; it++) {
     std::string kmer = replaced.substr(it, k);
     if (is_critical(kmer, input)) {
       if (input.forbiden_patterns.count(kmer) == 1) {
         input.forbiden_replacements.push_back(make_pair(i_, j_));
+        return 1;
       } else if (input.criticals_index.count(kmer) == 0) {
         // First time we see this critical kmer
         input.criticals_index[kmer] = input.nb_critical;
@@ -53,13 +57,13 @@ void count_critical(int i_, int j_, string replaced, Input &input) {
       input.alpha[input.criticals_index[kmer]][i_][j_]++;
     }
   }
+  return 0;
 }
 
 // Parse the input and get all informtion needed, occurences of kmer, context
 // etc
 Input parse_input(string input_file, string forbiden_pattern_file) {
   Input input;
-  vector<string> hashmark;
   unordered_set<char> alphabet;
   ifstream is(input_file); // open file
   char c;
@@ -70,7 +74,7 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
       continue;
     }
     if (c == '#') {
-      hashmark.push_back(window + "#");
+      input.hashmark.push_back(window + "#");
       window = "";
       hash_has_back_context = false;
     } else {
@@ -79,19 +83,20 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
         window += c;
       else {
         if (!hash_has_back_context) {
-          hashmark.back() += window;
+          input.hashmark.back() += window;
           hash_has_back_context = true;
         }
+        window += c; // add new character
         if (input.kmers_frequency.count(window) == 0)
           input.kmers_frequency[window] = 0;
         input.kmers_frequency[window]++;
-        window += c;        // add new character
         window.erase(0, 1); // remove first character
       }
     }
   }
   is.close(); // close file
-  input.nb_hashmark = hashmark.size();
+  cout << "size kmer frequency: " << input.kmers_frequency.size() << endl;
+  input.nb_hashmark = input.hashmark.size();
   // Parse forbiden_patterns
   ifstream is_forbiden_patterns(forbiden_pattern_file); // open file
   string pattern;
@@ -104,7 +109,7 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
   input.nb_critical = 0;
 
   // convert hashmark in unique context, count them
-  for (string &hash : hashmark) {
+  for (string &hash : input.hashmark) {
     auto context = make_pair(hash.substr(0, k - 1), hash.substr(k, k - 1));
     if (input.context_hashmark_index.count(context) == 0) {
       input.context_hashmark_index[context] = hashmark_index;
@@ -133,6 +138,41 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
   return input;
 }
 
+void output(vector<vector<char>> replacement, Input &input,
+            std::string input_file) {
+  int i_hash = 0;
+  std::ifstream is(input_file); // open file
+  std::ofstream os(input_file + ".output_ILP");
+  char c;
+  while (is.get(c)) {
+    if (c == '\n') {
+      continue;
+    }
+    if (c == '#') {
+      if (i_hash >= input.hashmark.size())
+        cout << "i_hash: " << i_hash
+             << " size hashmark: " << input.hashmark.size() << std::endl;
+      auto context_i = make_pair(input.hashmark[i_hash].substr(0, k - 1),
+                                 input.hashmark[i_hash].substr(k, k - 1));
+      int index_contex_i = input.context_hashmark_index[context_i];
+      char replaced;
+      if (replacement[index_contex_i].size() > 0) {
+        replaced = replacement[index_contex_i].back();
+        replacement[index_contex_i].pop_back();
+      } else {
+        replaced = '#';
+      }
+      if (replaced != '\0')
+        os << replaced;
+      i_hash++;
+    } else {
+      os << c;
+    }
+  }
+  is.close(); // close file
+  os.close(); // close file
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 5)
     cout << "You must give 4 arguments: "
@@ -144,7 +184,9 @@ int main(int argc, char *argv[]) {
 
   Input input = parse_input(input_file, forbiden_pattern_file);
   cout << "Finished parsing input to get stats!" << endl;
+  int nb_context = input.context_hashmark_index.size();
 
+  vector<vector<char>> replacement(nb_context);
   try {
 
     // Create an environment
@@ -156,7 +198,6 @@ int main(int argc, char *argv[]) {
     GRBModel model = GRBModel(env);
 
     // Create variables
-    int nb_context = input.context_hashmark_index.size();
     GRBVar **x = new GRBVar *[nb_context];
     for (int i = 0; i < nb_context; i++)
       x[i] = model.addVars(input.alphabet.size(), GRB_INTEGER);
@@ -178,8 +219,10 @@ int main(int argc, char *argv[]) {
     }
 
     // No forbiden replacement
+    vector<int> count_forbidden_replacement(nb_context, 0);
     for (auto &r : input.forbiden_replacements) {
       model.addConstr(x[r.first][r.second] == 0, "no sensitive pattern");
+      count_forbidden_replacement[r.first]++;
     }
 
     GRBLinExpr lhs;
@@ -196,14 +239,19 @@ int main(int argc, char *argv[]) {
       model.addConstr(lhs <= e_l, "limit occurences or count as ghost");
     }
 
+    int nb_impossible_replacement = 0;
     // All hashmark must have a replacement
     for (int i = 0; i < nb_context; i++) {
-      lhs = 0;
-      for (int j = 0; j < input.alphabet.size(); j++) {
-        lhs += x[i][j];
+      if (count_forbidden_replacement[i] >= input.alphabet.size()) {
+        nb_impossible_replacement++;
+      } else {
+        lhs = 0;
+        for (int j = 0; j < input.alphabet.size(); j++) {
+          lhs += x[i][j];
+        }
+        model.addConstr(lhs == input.context_hashmark_count[i],
+                        "all hashmark are replaced");
       }
-      model.addConstr(lhs == input.context_hashmark_count[i],
-                      "all hashmark are replaced");
     }
 
     // Optimize model
@@ -222,19 +270,24 @@ int main(int argc, char *argv[]) {
     }
 
     // Print x and z result
-    /*for (int i = 0; i < nb_context; i++) {
+    for (int i = 0; i < nb_context; i++) {
       for (int j = 0; j < input.alphabet.size(); j++) {
-        cout << "x[" << i << "][" << j << "]: " << x[i][j].get(GRB_DoubleAttr_X)
-             << endl;
+        // cout << "x[" << i << "][" << j << "]: ";
+        // cout << x[i][j].get(GRB_DoubleAttr_X) << endl;
+        for (int occ = 0; occ < x[i][j].get(GRB_DoubleAttr_X); occ++)
+          replacement[i].push_back(input.alphabet[j]);
       }
-    }*/
+    }
 
     int sum_z = 0;
     for (int l = 0; l < input.nb_critical; l++) {
       // cout << "z[" << l << "]: " << z[l].get(GRB_DoubleAttr_X) << endl;
       sum_z += z[l].get(GRB_DoubleAttr_X);
     }
+    cout << "Number of context with impossible_replacement: "
+         << nb_impossible_replacement << endl;
     cout << "Number of ghost: " << sum_z << endl;
+    output(replacement, input, input_file);
 
   } catch (GRBException e) {
     cout << "Error code = " << e.getErrorCode() << endl;
