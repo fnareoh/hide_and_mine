@@ -1,5 +1,6 @@
-#include <fstream> // std::ifstream
-#include <functional>
+#include <algorithm>     //std::max
+#include <fstream>       // std::ifstream
+#include <functional>    //std::function
 #include <iostream>      // std::cin, std::cout
 #include <map>           // std::map
 #include <string>        // std::string
@@ -117,13 +118,27 @@ float naive_unfrequent_measure(Input &input, std::string s) {
 
 // returns -1 if there is a forbiden_pattern and else the sum of inverse of
 // distance to tau for all unfrequent kmer
-float unfrequent_distance_to_tau(Input &input, std::string s) {
+float sum_unfrequent_distance_to_tau(Input &input, std::string s) {
   float unfrequent = 0;
   for (int i = 0; i <= s.size() - k; i++) {
     if (input.forbiden_patterns.count(s.substr(i, k)) == 1)
       return -1;
     if (is_unfrequent(input, s.substr(i, k)) >= 0)
-      unfrequent += 1 / (tau - is_unfrequent(input, s.substr(i, k)));
+      unfrequent += (float)1 / (tau - is_unfrequent(input, s.substr(i, k)));
+  }
+  return unfrequent;
+}
+
+// returns -1 if there is a forbiden_pattern and else the max of inverse of
+// distance to tau for all unfrequent kmer
+float max_unfrequent_distance_to_tau(Input &input, std::string s) {
+  float unfrequent = 0;
+  for (int i = 0; i <= s.size() - k; i++) {
+    if (input.forbiden_patterns.count(s.substr(i, k)) == 1)
+      return -1;
+    if (is_unfrequent(input, s.substr(i, k)) >= 0)
+      unfrequent = std::max(
+          unfrequent, (float)1 / (tau - is_unfrequent(input, s.substr(i, k))));
   }
   return unfrequent;
 }
@@ -176,10 +191,15 @@ std::string minimize_unfrequent(
 std::string minimize_unfrequent_naive(Input &input, std::string hashmark) {
   return minimize_unfrequent(input, hashmark, naive_unfrequent_measure);
 }
-// Replacement function for the naive distance to tau
-std::string minimize_unfrequent_distance_to_tau(Input &input,
-                                                std::string hashmark) {
-  return minimize_unfrequent(input, hashmark, unfrequent_distance_to_tau);
+// Replacement function for the sum of all distance to tau
+std::string minimize_sum_unfrequent_distance_to_tau(Input &input,
+                                                    std::string hashmark) {
+  return minimize_unfrequent(input, hashmark, sum_unfrequent_distance_to_tau);
+}
+// Replacement function for the  distance to tau
+std::string minimize_max_unfrequent_distance_to_tau(Input &input,
+                                                    std::string hashmark) {
+  return minimize_unfrequent(input, hashmark, max_unfrequent_distance_to_tau);
 }
 
 // update the frequency so far based on the replacement chosen, also report any
@@ -315,7 +335,10 @@ int main(int argc, char **argv) {
   output(input, "minimize_unfrequent_naive", minimize_unfrequent_naive,
          input_file);
 
-  output(input, "minimize_unfrequent_distance_to_tau",
-         minimize_unfrequent_distance_to_tau, input_file);
+  output(input, "minimize_sum_unfrequent_distance_to_tau",
+         minimize_sum_unfrequent_distance_to_tau, input_file);
+
+  output(input, "minimize_max_unfrequent_distance_to_tau",
+         minimize_max_unfrequent_distance_to_tau, input_file);
   return 0;
 }
