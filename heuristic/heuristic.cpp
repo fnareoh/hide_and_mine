@@ -233,7 +233,7 @@ void output(
   int nb_impossible_replacement = 0;
   int i = 0;
   std::ifstream is(input_file); // open file
-  std::ofstream os("output_" + replacement_name + "_" + input_file);
+  std::ofstream os(input_file + ".output_" + replacement_name);
   char c;
   while (is.get(c)) {
     if (c == '\n') {
