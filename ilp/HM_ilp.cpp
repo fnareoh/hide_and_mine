@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
     // All hashmark must have a replacement
     for (int i = 0; i < nb_context; i++) {
       if (count_forbidden_replacement[i] >= input.alphabet.size()) {
-        nb_impossible_replacement++;
+        nb_impossible_replacement += input.context_hashmark_count[i];
       } else {
         lhs = 0;
         for (int j = 0; j < input.alphabet.size(); j++) {
@@ -287,6 +287,13 @@ int main(int argc, char *argv[]) {
     cout << "Number of context with impossible_replacement: "
          << nb_impossible_replacement << endl;
     cout << "Number of ghost: " << sum_z << endl;
+
+    std::ofstream os("output/" +
+                     input_file.substr(input_file.find_last_of("/\\") + 1) +
+                     ".result_ILP");
+    os << nb_impossible_replacement << endl;
+    os << sum_z << endl;
+    os.close(); // close file
     output(replacement, input, input_file);
 
   } catch (GRBException e) {
