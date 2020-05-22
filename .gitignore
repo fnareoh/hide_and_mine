@@ -1,3 +1,4 @@
 heuristic/heuristic
-ilp/*.log
+*.log
 ilp/build
+trace.mc
