@@ -6,6 +6,7 @@
 #include <string>        // std::string
 #include <unordered_set> // std::unordered_set
 #include <vector>        // std::vector
+#include <chrono>        // std::chrono
 
 int k = 0;
 int tau = 0;
@@ -151,12 +152,10 @@ std::string minimize_unfrequent(
     std::function<float(Input &, std::string)> unfrequent_measurement) {
   std::map<char, int> candidates;
   // If the context has never been seen before, look at the entire alphabet
-  if (input.context.count(hashmark.substr(0, k - 1)) == 0) {
-    for (const char &c : input.alphabet) {
-      candidates[c] = 0;
-    }
-  } else
-    candidates = input.context[hashmark.substr(0, k - 1)];
+
+  for (const char &c : input.alphabet) {
+    candidates[c] = 0;
+  }
 
   std::string min_char = "";
   float nb_unfrequent = unfrequent_measurement(
@@ -215,7 +214,7 @@ int update_frequency_and_count_ghosts(Input &input, std::string replaced) {
       continue;
     input.k_frequency[kmer]++;
     if (input.k_frequency[kmer] >= tau) {
-      std::cout << "ghost: " << kmer << std::endl;
+      // std::cout << "ghost: " << kmer << std::endl;
       ghost++;
     }
   }
@@ -232,8 +231,12 @@ void output(
   int nb_ghosts = 0;
   int nb_impossible_replacement = 0;
   int i = 0;
+  std::chrono::steady_clock sc;
+  auto start = sc.now();
   std::ifstream is(input_file); // open file
-  std::ofstream os(input_file + ".output_" + replacement_name);
+  std::ofstream os("output/" +
+                   input_file.substr(input_file.find_last_of("/\\") + 1) +
+                   ".output_" + replacement_name);
   char c;
   while (is.get(c)) {
     if (c == '\n') {
@@ -259,6 +262,15 @@ void output(
   is.close(); // close file
   os.close(); // close file
 
+  auto end = sc.now();
+  auto time_span = static_cast<std::chrono::duration<double>> (end - start);
+  double runtime = time_span.count();
+  std::ofstream os_time("output/" +
+                   input_file.substr(input_file.find_last_of("/\\") + 1) +
+                   ".output_" + replacement_name+"_time");
+  os_time << runtime << std::endl;
+  os_time.close();
+
   std::cout << "Number of ghosts created by " << replacement_name << ": "
             << nb_ghosts << std::endl;
   std::cout << "Impossible replacement: " << nb_impossible_replacement
@@ -267,8 +279,7 @@ void output(
 
 // Parse the input and get all informtion needed, occurences of kmer, context
 // etc
-Input parse_input(std::string input_file, std::string forbiden_pattern_file) {
-  Input input;
+void parse_input(std::string input_file, std::string forbiden_pattern_file, Input &input) {
   std::ifstream is(input_file); // open file
   char c;
   std::string window = "";
@@ -315,7 +326,6 @@ Input parse_input(std::string input_file, std::string forbiden_pattern_file) {
   std::string pattern;
   while (getline(is_forbiden_patterns, pattern))
     input.forbiden_patterns.insert(pattern);
-  return input;
 }
 
 int main(int argc, char **argv) {
@@ -327,13 +337,14 @@ int main(int argc, char **argv) {
   std::string input_file = argv[3];
   std::string forbiden_pattern_file = argv[4];
 
-  Input input = parse_input(input_file, forbiden_pattern_file);
+  Input input;
+  parse_input(input_file, forbiden_pattern_file, input);
   std::cout << "Finished parsing input to get stats!" << std::endl;
 
-  output(input, "highest_frequency", highest_frequency, input_file);
+  // output(input, "highest_frequency", highest_frequency, input_file);
 
-  output(input, "minimize_unfrequent_naive", minimize_unfrequent_naive,
-         input_file);
+  // output(input, "minimize_unfrequent_naive", minimize_unfrequent_naive,
+  //       input_file);
 
   output(input, "minimize_sum_unfrequent_distance_to_tau",
          minimize_sum_unfrequent_distance_to_tau, input_file);

@@ -17,7 +17,7 @@ forbiden_patterns = set(forbiden_patterns)
 occ = []
 i = 0
 
-while i + k < len(S):
+while i + k <= len(S):
     if S[i : i + k] in forbiden_patterns:
         occ.append(i)
     i += 1

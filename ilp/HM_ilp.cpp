@@ -9,6 +9,7 @@ using namespace std;
 #include <unordered_set> // unordered_set
 #include <utility>       // pair
 #include <vector>        // vector
+#include <chrono>        // chrono
 
 int k = 0;
 int tau = 0;
@@ -62,8 +63,7 @@ int count_critical(int i_, int j_, string replaced, Input &input) {
 
 // Parse the input and get all informtion needed, occurences of kmer, context
 // etc
-Input parse_input(string input_file, string forbiden_pattern_file) {
-  Input input;
+void parse_input(string input_file, string forbiden_pattern_file, Input& input) {
   unordered_set<char> alphabet;
   ifstream is(input_file); // open file
   char c;
@@ -118,31 +118,33 @@ Input parse_input(string input_file, string forbiden_pattern_file) {
     }
     input.context_hashmark_count[input.context_hashmark_index[context]]++;
   }
+}
 
-  // Compute the critical kmer and the number we may add through replacement
-  // (alpha)
-  for (map<pair<string, string>, int>::iterator it =
-           input.context_hashmark_index.begin();
-       it != input.context_hashmark_index.end(); ++it) {
-    auto context = it->first;
-    string replaced;
-    for (int l = 0; l < input.alphabet.size(); l++) {
-      if (input.alphabet[l] == '\0')
-        replaced = context.first + context.second;
-      else
-        replaced = context.first + input.alphabet[l] + context.second;
-      count_critical(it->second, l, replaced, input);
+void compute_replacement(Input& input){
+    // Compute the critical kmer and the number we may add through replacement
+    // (alpha)
+    for (map<pair<string, string>, int>::iterator it =
+             input.context_hashmark_index.begin();
+         it != input.context_hashmark_index.end(); ++it) {
+      auto context = it->first;
+      string replaced;
+      for (int l = 0; l < input.alphabet.size(); l++) {
+        if (input.alphabet[l] == '\0')
+          replaced = context.first + context.second;
+        else
+          replaced = context.first + input.alphabet[l] + context.second;
+        count_critical(it->second, l, replaced, input);
+      }
     }
-  }
-
-  return input;
 }
 
 void output(vector<vector<char>> replacement, Input &input,
             std::string input_file) {
   int i_hash = 0;
   std::ifstream is(input_file); // open file
-  std::ofstream os(input_file + ".output_ILP");
+  std::ofstream os("output/" +
+                   input_file.substr(input_file.find_last_of("/\\") + 1) +
+                   ".output_ILP");
   char c;
   while (is.get(c)) {
     if (c == '\n') {
@@ -182,8 +184,16 @@ int main(int argc, char *argv[]) {
   string input_file = argv[3];
   string forbiden_pattern_file = argv[4];
 
-  Input input = parse_input(input_file, forbiden_pattern_file);
-  cout << "Finished parsing input to get stats!" << endl;
+  Input input;
+  parse_input(input_file, forbiden_pattern_file, input);
+  cout << "Finished parsing input !" << endl;
+
+
+  compute_replacement(input);
+  cout << "Finished compute_replacement !" << endl;
+  std::chrono::steady_clock sc;
+  auto start = sc.now();
+
   int nb_context = input.context_hashmark_index.size();
 
   vector<vector<char>> replacement(nb_context);
@@ -196,6 +206,7 @@ int main(int argc, char *argv[]) {
 
     // Create an empty model
     GRBModel model = GRBModel(env);
+    model.set("TimeLimit", "200.0");
 
     // Create variables
     GRBVar **x = new GRBVar *[nb_context];
@@ -288,12 +299,6 @@ int main(int argc, char *argv[]) {
          << nb_impossible_replacement << endl;
     cout << "Number of ghost: " << sum_z << endl;
 
-    std::ofstream os("output/" +
-                     input_file.substr(input_file.find_last_of("/\\") + 1) +
-                     ".result_ILP");
-    os << nb_impossible_replacement << endl;
-    os << sum_z << endl;
-    os.close(); // close file
     output(replacement, input, input_file);
 
   } catch (GRBException e) {
@@ -303,5 +308,14 @@ int main(int argc, char *argv[]) {
     cout << "Exception during optimization" << endl;
   }
 
+
+  auto end = sc.now();
+  auto time_span = static_cast<chrono::duration<double>> (end - start);
+  double runtime = time_span.count();
+  std::ofstream os_time("output/" +
+                   input_file.substr(input_file.find_last_of("/\\") + 1) +
+                   ".output_ILP_time");
+  os_time << runtime << std::endl;
+  os_time.close();
   return 0;
 }
