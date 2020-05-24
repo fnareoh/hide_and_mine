@@ -1,5 +1,0 @@
-method,time,impossible_replacement,ghosts,losts,ghosts_and_losts,distortion
-pkdd,/,/,/,/,/,/
-ilp,/,/,/,/,/,/
-minimize_max_unfrequent_distance_to_tau,1.5442e-05,0,0,16196,16196,1905424703
-minimize_sum_unfrequent_distance_to_tau,3.5431e-05,0,0,16196,16196,1905424703
