@@ -8,6 +8,9 @@ NAME="$(basename -- $HASH_INPUT)"
 
 export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
 
+mkdir -p data/results
+mkdir -p data/output
+
 ./src/heuristic/heuristic $K $TAU $HASH_INPUT $SENS_INPUT
 
 ./src/ilp/build/HM_ilp $K $TAU $HASH_INPUT $SENS_INPUT
