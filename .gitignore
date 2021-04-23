@@ -1,5 +1,6 @@
 src/heuristic/heuristic
 *.log
 src/ilp/build
+extra/pkdd/
 trace.mc
 data
