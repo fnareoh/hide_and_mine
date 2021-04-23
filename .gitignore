@@ -1,4 +1,4 @@
-heuristic/heuristic
+src/heuristic/heuristic
 *.log
-ilp/build
+src/ilp/build
 trace.mc
