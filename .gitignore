@@ -2,3 +2,4 @@ src/heuristic/heuristic
 *.log
 src/ilp/build
 trace.mc
+data
