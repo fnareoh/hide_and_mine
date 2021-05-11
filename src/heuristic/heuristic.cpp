@@ -17,7 +17,6 @@ struct Input {
   std::map<std::string, int> original_k_frequency;
   std::unordered_set<std::string> forbiden_patterns;
   std::unordered_set<char> alphabet;
-  std::map<std::string, std::map<char, int>> context;
   std::vector<std::string> hashmark;
 };
 
@@ -272,13 +271,6 @@ void parse_input(std::string input_file, std::string forbiden_pattern_file,
           hash_has_back_context = true;
         }
 
-        // save context of length k-1
-        // create an entry with empty list if none
-        if (input.context.count(window) == 0)
-          input.context[window] = {};
-        if (input.context[window].count(c) == 0)
-          input.context[window][c] = 0;
-        input.context[window][c]++; // augment the count of letter
         window += c;                // add new character
         if (input.original_k_frequency.count(window) == 0)
           input.original_k_frequency[window] = 0;
