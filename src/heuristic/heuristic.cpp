@@ -51,7 +51,7 @@ void print_k_frequency(std::map<std::string, int> k_frequency) {
   std::cout << "]" << std::endl;
 }
 
-// Returns true if hte string s has any forbiden_pattern, else no
+// Returns true if the string s has any forbiden_pattern, else no
 bool has_forbiden_pattern(Input &input, std::string s) {
   for (int i = 0; i <= s.size() - k; i++) {
     if (input.forbiden_patterns.count(s.substr(i, k)) == 1) {
@@ -61,37 +61,6 @@ bool has_forbiden_pattern(Input &input, std::string s) {
   return false;
 }
 
-// For the hashmark given in input "context"+"#", it chooses amng the allowed
-// replacement (those that don't create forbiden pattern) the one with the
-// highest frequency  in the original string, thus minimizing entropy.
-std::string highest_frequency(Input &input, std::string hashmark) {
-  std::map<char, int> candidates;
-  if (input.context.count(hashmark.substr(0, k - 1)) == 0) {
-    for (const char &c : input.alphabet) {
-      candidates[c] = 0;
-    }
-  } else
-    candidates = input.context[hashmark.substr(0, k - 1)];
-  std::string max_char = "";
-  int max = 0;
-  for (std::map<char, int>::iterator it = candidates.begin();
-       it != candidates.end(); ++it) {
-    if (has_forbiden_pattern(input, hashmark.substr(0, k - 1) + it->first +
-                                        hashmark.substr(k, k - 1)))
-      continue;
-    if (it->second >= max) {
-      max = it->second;
-      max_char = it->first;
-    }
-  }
-  std::string res =
-      hashmark.substr(0, k - 1) + max_char + hashmark.substr(k, k - 1);
-  if (has_forbiden_pattern(input, res)) {
-    // std::cout << "No solution possible!" << std::endl;
-    return hashmark;
-  }
-  return res;
-}
 
 // Ouputs -1 if the kmer is not unfrequent, else ouputs it's number of
 // occurences
@@ -342,7 +311,6 @@ int main(int argc, char **argv) {
   parse_input(input_file, forbiden_pattern_file, input);
   std::cout << "Finished parsing input to get stats!" << std::endl;
 
-  // output(input, "highest_frequency", highest_frequency, input_file);
 
   // output(input, "minimize_unfrequent_naive", minimize_unfrequent_naive,
   //       input_file);
