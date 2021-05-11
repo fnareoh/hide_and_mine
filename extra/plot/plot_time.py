@@ -33,7 +33,7 @@ while index < len(content):
     for i in range(len(content[index])):
         if content[index][i] == "":
             break
-        for j in range(4):
+        for j in range(3):
             if len(data[content[index][i]]) == 0:
                 data[content[index][i]] = [[] for _ in range(4)]
             if content[index][i] == "time":
@@ -42,9 +42,18 @@ while index < len(content):
                 data[content[index][i]][j].append(content[index + j + 1][i])
             else:
                 data[content[index][i]][j].append(int(content[index + j + 1][i]))
-    index += 5
+    index += 4
 
 pprint(data)
+
+
+def reorder(list1, list2):
+    zipped_lists = zip(list1, list2)
+    sorted_pairs = sorted(zipped_lists)
+    tuples = zip(*sorted_pairs)
+    f_list1, f_list2 = [list(tuple) for tuple in tuples]
+    return f_list1, f_list2
+
 
 plt.figure(figsize=(10, 10))
 fig, ax = plt.subplots(figsize=(4, 5))
@@ -62,7 +71,7 @@ elif variation == "tau":
         for i in range(len(data["tau"]))
     ]
 elif variation == "n":
-    x = [data["n"][i] for i in range(len(data["k"]))]
+    x = [int(data["n"][i][:-1]) for i in range(len(data["n"]))]
     labels = [
         str(data["n"][i]) + "\n" + str(data["|S|"][i]) for i in range(len(data["n"]))
     ]
@@ -73,10 +82,15 @@ else:
         for i in range(len(data["nb_sensitive"]))
     ]
 
-plot = [data["time"][i] for i in range(4)]
-plt.plot(labels, plot[0], "o-", label="TPM", linewidth=2.5)
-plt.plot(labels, plot[1], "s-", label="ILP", linewidth=2.5)
-plt.plot(labels, plot[3], "^-", label="HEU", linewidth=2.5)
+plot = [data["time"][i] for i in range(3)]
+_, sorted_labels = reorder(x, labels)
+_, plot0 = reorder(x, plot[0])
+_, plot1 = reorder(x, plot[1])
+_, plot2 = reorder(x, plot[2])
+print(sorted_labels)
+plt.plot(sorted_labels, plot0, "o-", label="TPM", linewidth=2.5)
+plt.plot(sorted_labels, plot1, "s-", label="ILP", linewidth=2.5)
+plt.plot(sorted_labels, plot2, "^-", label="HEU", linewidth=2.5)
 ax.set_ylabel("Runime (s)")
 if variation == "k":
     ax.set_xlabel("k\n|P|")

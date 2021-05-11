@@ -15,7 +15,7 @@ pattern_file = sys.argv[4]
 file_name = sys.argv[5]
 
 method_names = [
-    # "pkdd",
+    "pkdd",
     "ilp",
     # "minimize_max_unfrequent_distance_to_tau",
     "minimize_sum_unfrequent_distance_to_tau",
@@ -127,9 +127,7 @@ def evaluate(name, writer):
     print("Number of losts: ", nb_losts)
     print("Number of ghosts and losts: ", nb_ghosts + nb_losts)
     print("Distortion: ", distortion)
-    writer.writerow(
-        [name, time, nb_not_replaced, nb_ghosts, distortion,]
-    )
+    writer.writerow([name, time, nb_not_replaced, nb_ghosts, distortion])
 
 
 with open("data/results/" + file_name + ".comparison", "w", newline="") as file:
