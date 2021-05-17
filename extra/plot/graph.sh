@@ -2,7 +2,7 @@
 rm data/results/*.svg
 rm data/figures/*.svg
 
-for NAME in olden msn
+for NAME in olden truck msnbc dna
 do
 for FILE in data/results/${NAME}_char.summary
 do
@@ -11,6 +11,12 @@ do
 done
 
 for FILE in data/results/${NAME}*char*k_?.summary
+do
+   python extra/plot/plot_bar.py $FILE tau ghosts
+   python extra/plot/plot_bar.py $FILE tau distortion
+done
+
+for FILE in data/results/${NAME}*char*k_??.summary
 do
    python extra/plot/plot_bar.py $FILE tau ghosts
    python extra/plot/plot_bar.py $FILE tau distortion
