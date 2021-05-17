@@ -113,7 +113,13 @@ plt.tight_layout()
 plt.gray()
 # plt.show()
 fig.savefig(
-    file_name.split(".")[0] + "_" + variation + "_" + metric + ".svg",
+    "data/figures/"
+    + file_name.split("/")[-1].split(".")[0]
+    + "_"
+    + variation
+    + "_"
+    + metric
+    + ".svg",
     dpi=fig.dpi,
     bbox_inches="tight",
 )
