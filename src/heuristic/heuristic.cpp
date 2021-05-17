@@ -310,7 +310,7 @@ int main(int argc, char **argv) {
   output(input, "minimize_sum_unfrequent_distance_to_tau",
          minimize_sum_unfrequent_distance_to_tau, input_file);
 
-  output(input, "minimize_max_unfrequent_distance_to_tau",
-         minimize_max_unfrequent_distance_to_tau, input_file);
+  //output(input, "minimize_max_unfrequent_distance_to_tau",
+  //       minimize_max_unfrequent_distance_to_tau, input_file);
   return 0;
 }
