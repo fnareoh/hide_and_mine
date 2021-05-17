@@ -65,4 +65,49 @@ default_y=500
 generate_all
 }
 
-generate_OLD
+generate_TRU(){
+default_input=data/original_data/truck_char.txt
+name=truck_char
+list_input=()
+default_k=3
+list_k=(2 3 4 5)
+default_tau=20
+list_tau=(5 10 20 30)
+default_S=30
+list_S=(10 30 50 70)
+default_y=150
+
+generate_all
+}
+
+generate_MSN(){
+default_input=data/original_data/msnbc_char.txt
+name=msnbc_char
+list_input=()
+default_k=8
+list_k=(3 4 6 8)
+default_tau=200
+list_tau=(100 150 200 300)
+default_S=240
+list_S=(60 120 240 480)
+default_y=400
+
+generate_all
+}
+
+generate_DNA(){
+default_input=data/original_data/dna_char.txt
+name=dna_char
+list_input=()
+default_k=11
+list_k=(9 11 13 15)
+default_tau=20
+list_tau=(5 10 20 30)
+default_S=50
+list_S=(30 40 50 60)
+default_y=35
+
+generate_all
+}
+
+generate_DNA
