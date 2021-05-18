@@ -110,4 +110,7 @@ default_y=35
 generate_all
 }
 
+generate_OLD
+generate_TRU
+generate_MSN
 generate_DNA
