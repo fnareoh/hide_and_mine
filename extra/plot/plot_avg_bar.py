@@ -185,7 +185,6 @@ else:
 # ax.set_title(metric.capitalize() + " vs " + variation + " - " + dataset)
 ax.set_xticks(x)
 ax.set_xticklabels(sorted_labels)
-ax.legend()
 
 
 def autolabel(rects):
@@ -214,7 +213,7 @@ if metric == "ghosts":
 
 # plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.5), ncol=4)
 # plt.legend().remove()
-plt.legend(prop={"size": 14})
+plt.legend(loc="best", prop={"size": 10})
 if metric == "distortion":
     plt.legend(
         loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
