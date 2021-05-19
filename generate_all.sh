@@ -30,7 +30,7 @@ generate_all() {
   done
   for i_S in ${!list_S[@]}
   do
-    generate $default_k $default_tau $default_input $default_y ${list_S[$i_S]}
+    generate $default_k $default_tau $default_input ${list_y[$i_S]} ${list_S[$i_S]}
   done
   cat data/results/${name}_k_*_tau_${default_tau}_m_${default_S}.txt.comparison > data/results/${name}.summary
   cat data/results/${name}_k_${default_k}_tau_*_m_${default_S}.txt.comparison > data/results/${name}_k_${default_k}.summary
@@ -49,6 +49,7 @@ list_tau=(5 10 15 20)
 default_S=100
 list_S=(10 100 500 1000)
 default_y=100000
+list_y=(100000 100000 100000 100000)
 
 generate_all
 generate_list_input
@@ -65,6 +66,7 @@ list_tau=(3 5 10 15)
 default_S=120
 list_S=(60 120 240 320)
 default_y=500
+list_y=(500 500 500 500)
 
 generate_all
 }
@@ -80,6 +82,7 @@ list_tau=(5 10 20 30)
 default_S=30
 list_S=(10 30 50 70)
 default_y=40
+list_y=(40 40 140 240)
 
 generate_all
 }
@@ -95,6 +98,7 @@ list_tau=(100 150 200 300)
 default_S=240
 list_S=(60 120 240 480)
 default_y=400
+list_y=(400 400 400 400)
 
 generate_all
 }
@@ -110,11 +114,12 @@ list_tau=(5 10 20 30)
 default_S=50
 list_S=(30 40 50 60)
 default_y=35
+list_y=(35 35 35 35)
 
 generate_all
 }
 
-#generate_OLD
+generate_OLD
 generate_TRU
-#generate_MSN
-#generate_DNA
+generate_MSN
+generate_DNA
