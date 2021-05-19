@@ -13,13 +13,18 @@ input_file = sys.argv[3]
 pattern_file = sys.argv[4]
 # base file name
 file_name = sys.argv[5]
+method_names = []
 
-method_names = [
-    "pkdd",
-    "ilp",
-    # "minimize_max_unfrequent_distance_to_tau",
-    "minimize_sum_unfrequent_distance_to_tau",
-]
+if len(sys.argv) == 7:
+    method_names = ["minimize_sum_unfrequent_distance_to_tau", "constant", "random"]
+
+else:
+    method_names = [
+        "pkdd",
+        "ilp",
+        # "minimize_max_unfrequent_distance_to_tau",
+        "minimize_sum_unfrequent_distance_to_tau",
+    ]
 
 
 S = ""
@@ -57,6 +62,7 @@ def evaluate(name, writer):
         return
 
     new_S = ""
+    print("data/output/" + file_name + ".output_" + name)
     with open("data/output/" + file_name + ".output_" + name, "r") as file:
         new_S = file.read().replace("\n", "")
 

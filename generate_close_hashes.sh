@@ -5,7 +5,7 @@ generate(){
   local y=$4
   local S=$5 #number of sensitve pattern
   local input=$(basename -- "$file")
-  local NAME="${input%.*}_k_${k}_tau_${tau}_m_$S.${input##*.}"
+  local NAME="${input%.*}_k_${k}_tau_${tau}_m_$S.txt"
 
   #generate input
   python extra/fasta_to_hasmark_input.py $file data/hashmark_input/$NAME
@@ -17,11 +17,14 @@ generate(){
   cd ../..
 
   #run for close hashes
-./src/heuristic/heuristic $k $tau data/hashmark_input/$NAME data/sensitive_pattern/$NAME
-status=$?
-if [ $status -ne 0 ]; then
-  exit 1
-fi
+  ./src/heuristic/heuristic $k $tau data/hashmark_input/$NAME data/sensitive_pattern/$NAME
+  status=$?
+  if [ $status -ne 0 ]; then
+    exit 1
+  fi
+
+  #evaluate
+  python extra/evaluate_all.py $k $tau data/hashmark_input/$NAME data/sensitive_pattern/$NAME $NAME close_hashes
 }
 
 generate_list_input(){
