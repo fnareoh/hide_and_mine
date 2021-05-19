@@ -119,6 +119,7 @@ list_y=(35 35 35 35)
 generate_all
 }
 
+./compile.sh
 generate_OLD
 generate_TRU
 generate_MSN
