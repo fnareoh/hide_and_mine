@@ -113,6 +113,13 @@ float max_unfrequent_distance_to_tau(Input &input, std::string s) {
   return unfrequent;
 }
 
+int find_hash(std::string hashmark){
+  for (int i=0; i < hashmark.size(); i++){
+    if (hashmark.at(i)=='#') return i;
+  }
+  return -1;
+}
+
 // Given a method to compute the quantity/importance of the unfrequent added
 // (the unfrequent_measurement function) it chooses the allowed replacement
 // that minizes it. It is used to avoid code duplication.
@@ -122,21 +129,28 @@ std::string minimize_unfrequent(
   std::map<char, int> candidates;
   // If the context has never been seen before, look at the entire alphabet
 
+  int pos_hashmark;
+  if (hashmark.size() == 2*k-1) pos_hashmark = k-1;
+  else pos_hashmark = find_hash(hashmark);
+  assert(pos_hashmark>=0 && pos_hashmark < hashmark.size());
+
   for (const char &c : input.alphabet) {
     candidates[c] = 0;
   }
 
   std::string min_char = "";
-  float nb_unfrequent = unfrequent_measurement(
-      input, hashmark.substr(0, k - 1) + hashmark.substr(k, k - 1));
+  std::string s = hashmark.substr(0, pos_hashmark) + hashmark.substr(pos_hashmark+1);
+  float nb_unfrequent=0;
+  if (s.size() >= k) nb_unfrequent = unfrequent_measurement(input, s);
   int min = ((nb_unfrequent == -1) ? 2 * k - 1 : nb_unfrequent);
   // for each possible replacement, compute the risk of adding tau-ghost
   // (given by unfrequent_measurement)
+
   for (std::map<char, int>::iterator it = candidates.begin();
        it != candidates.end(); ++it) {
-    nb_unfrequent =
-        unfrequent_measurement(input, hashmark.substr(0, k - 1) + it->first +
-                                          hashmark.substr(k));
+    s = hashmark.substr(0, pos_hashmark) + it->first + hashmark.substr(pos_hashmark+1);
+    if (s.size() >= k) nb_unfrequent = unfrequent_measurement(input, s);
+    else nb_unfrequent=0;
     if (nb_unfrequent ==
         -1) { // there is a forbiden kmer, not a possible replacement
       continue;
@@ -145,35 +159,40 @@ std::string minimize_unfrequent(
       min_char = it->first;
     }
   }
-  nb_unfrequent = unfrequent_measurement(
-      input, hashmark.substr(0, k - 1) + min_char + hashmark.substr(k));
+  s = hashmark.substr(0, pos_hashmark) + min_char + hashmark.substr(pos_hashmark+1);
+  if (s.size() >= k) nb_unfrequent = unfrequent_measurement(input, s);
+  else nb_unfrequent=0;
   if (nb_unfrequent == -1) {
     // std::cout << "No solution possible!" << std::endl;
     return hashmark; // There are no possible replacement, we just leave the
                      // hashmark
   }
-  return hashmark.substr(0, k - 1) + min_char + hashmark.substr(k);
+  return hashmark.substr(0, pos_hashmark) + min_char + hashmark.substr(pos_hashmark+1);
 }
 
 // Replace the hashmark by a random letter in the alphabet (may create sensitve pattern)
 std::string random_replacement(
-  Input &input, std::string hashmark,
-  std::function<float(Input &, std::string)> unfrequent_measurement) {
+  Input &input, std::string hashmark) {
     assert (input.alphabet.size()>0);
+    int pos_hashmark;
+    if (hashmark.size() == 2*k-1) pos_hashmark = k-1;
+    else pos_hashmark = find_hash(hashmark);
     int r = rand() % input.alphabet.size(); //not really random
     auto it = std::begin(input.alphabet);
     std::advance(it,r);
-    return hashmark.substr(0, k - 1) + *it + hashmark.substr(k);
+    return hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
 }
 
 
 // Replace the hashmark by a constant letter in the alphabet (may create sensitve pattern)
 std::string constant_replacement(
-    Input &input, std::string hashmark,
-    std::function<float(Input &, std::string)> unfrequent_measurement) {
+    Input &input, std::string hashmark) {
   assert (input.alphabet.size()>0);
+  int pos_hashmark;
+  if (hashmark.size() == 2*k-1) pos_hashmark = k-1;
+  else pos_hashmark = find_hash(hashmark);
   auto it = std::begin(input.alphabet);
-  return hashmark.substr(0, k - 1) + *it + hashmark.substr(k);
+  return hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
   }
 
 
@@ -237,11 +256,13 @@ void output(
       std::string replaced = replacement_function(input, input.hashmark[i]);
       // std::cout << nb_ghosts << std::endl;
       // std::cout << replaced << std::endl;
-      if (replaced[k - 1] == '#') {
+      if (replaced[find_hash(input.hashmark[i])] == '#') {
         nb_impossible_replacement++;
         os << "#";
       } else {
-        nb_ghosts += update_frequency_and_count_ghosts(input, replaced);
+        if (replaced.size() >= k){
+          nb_ghosts += update_frequency_and_count_ghosts(input, replaced);
+        }
         if (replaced.size() == input.hashmark[i].size())
           os << replaced[k - 1];
       }
@@ -316,8 +337,9 @@ void parse_input(std::string input_file, std::string forbiden_pattern_file,
   // Parse forbiden_patterns
   std::ifstream is_forbiden_patterns(forbiden_pattern_file); // open file
   std::string pattern;
-  while (getline(is_forbiden_patterns, pattern))
+  while (getline(is_forbiden_patterns, pattern)){
     input.forbiden_patterns.insert(pattern);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -339,6 +361,11 @@ int main(int argc, char **argv) {
 
   output(input, "minimize_sum_unfrequent_distance_to_tau",
          minimize_sum_unfrequent_distance_to_tau, input_file);
+
+#ifdef CLOSE_HASHES
+  output(input,"constant",constant_replacement,input_file);
+  output(input,"random",random_replacement,input_file);
+#endif
 
   //output(input, "minimize_max_unfrequent_distance_to_tau",
   //       minimize_max_unfrequent_distance_to_tau, input_file);
