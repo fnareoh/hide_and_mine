@@ -1,5 +1,6 @@
 #include <algorithm>     //std::max
 #include <chrono>        // std::chrono
+#include <cassert>        // std::assert
 #include <fstream>       // std::ifstream
 #include <functional>    //std::function
 #include <iostream>      // std::cin, std::cout
@@ -135,7 +136,7 @@ std::string minimize_unfrequent(
        it != candidates.end(); ++it) {
     nb_unfrequent =
         unfrequent_measurement(input, hashmark.substr(0, k - 1) + it->first +
-                                          hashmark.substr(k, k - 1));
+                                          hashmark.substr(k));
     if (nb_unfrequent ==
         -1) { // there is a forbiden kmer, not a possible replacement
       continue;
@@ -145,14 +146,36 @@ std::string minimize_unfrequent(
     }
   }
   nb_unfrequent = unfrequent_measurement(
-      input, hashmark.substr(0, k - 1) + min_char + hashmark.substr(k, k - 1));
+      input, hashmark.substr(0, k - 1) + min_char + hashmark.substr(k));
   if (nb_unfrequent == -1) {
     // std::cout << "No solution possible!" << std::endl;
     return hashmark; // There are no possible replacement, we just leave the
                      // hashmark
   }
-  return hashmark.substr(0, k - 1) + min_char + hashmark.substr(k, k - 1);
+  return hashmark.substr(0, k - 1) + min_char + hashmark.substr(k);
 }
+
+// Replace the hashmark by a random letter in the alphabet (may create sensitve pattern)
+std::string random_replacement(
+  Input &input, std::string hashmark,
+  std::function<float(Input &, std::string)> unfrequent_measurement) {
+    assert (input.alphabet.size()>0);
+    int r = rand() % input.alphabet.size(); //not really random
+    auto it = std::begin(input.alphabet);
+    std::advance(it,r);
+    return hashmark.substr(0, k - 1) + *it + hashmark.substr(k);
+}
+
+
+// Replace the hashmark by a constant letter in the alphabet (may create sensitve pattern)
+std::string constant_replacement(
+    Input &input, std::string hashmark,
+    std::function<float(Input &, std::string)> unfrequent_measurement) {
+  assert (input.alphabet.size()>0);
+  auto it = std::begin(input.alphabet);
+  return hashmark.substr(0, k - 1) + *it + hashmark.substr(k);
+  }
+
 
 // Replacement function for the naive counting of unfrequent
 std::string minimize_unfrequent_naive(Input &input, std::string hashmark) {
@@ -219,7 +242,7 @@ void output(
         os << "#";
       } else {
         nb_ghosts += update_frequency_and_count_ghosts(input, replaced);
-        if (replaced.size() == 2 * k - 1)
+        if (replaced.size() == input.hashmark[i].size())
           os << replaced[k - 1];
       }
       i++;
@@ -258,6 +281,9 @@ void parse_input(std::string input_file, std::string forbiden_pattern_file,
       continue;
     }
     if (c == '#') {
+      if (!hash_has_back_context) {
+        input.hashmark.back() += window;
+      }
       input.hashmark.push_back(window + "#");
       window = "";
       hash_has_back_context = false;
