@@ -1,11 +1,15 @@
 generate(){
-  local k=$1
-  local tau=$2
-  local file=$3
-  local y=$4
-  local S=$5 #number of sensitve pattern
-  ./extra/generate_input.sh $k $tau $file $tau $y $S
-  ./extra/test.sh $k $tau $file $S
+  status=1
+  while [ $status -ne 0 ]; do
+    local k=$1
+    local tau=$2
+    local file=$3
+    local y=$4
+    local S=$5 #number of sensitve pattern
+    ./extra/generate_input.sh $k $tau $file $tau $y $S
+    ./extra/test.sh $k $tau $file $S
+    status=$?
+  done
 }
 
 generate_list_input(){
@@ -75,7 +79,7 @@ default_tau=20
 list_tau=(5 10 20 30)
 default_S=30
 list_S=(10 30 50 70)
-default_y=150
+default_y=40
 
 generate_all
 }
@@ -110,7 +114,7 @@ default_y=35
 generate_all
 }
 
-generate_OLD
+#generate_OLD
 generate_TRU
-generate_MSN
-generate_DNA
+#generate_MSN
+#generate_DNA
