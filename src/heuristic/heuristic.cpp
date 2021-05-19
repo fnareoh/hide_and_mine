@@ -306,6 +306,10 @@ void parse_input(std::string input_file, std::string forbiden_pattern_file,
     }
   }
   is.close(); // close file
+  if (!hash_has_back_context) {
+    input.hashmark.back() += window;
+    hash_has_back_context = true;
+  }
   // print_context(context);
   input.k_frequency = input.original_k_frequency;
 
