@@ -248,28 +248,35 @@ void output(
                    input_file.substr(input_file.find_last_of("/\\") + 1) +
                    ".output_" + replacement_name);
   char c;
+  std::string last_k_char = "";
   while (is.get(c)) {
     if (c == '\n') {
       continue;
     }
     if (c == '#') {
-      std::string replaced = replacement_function(input, input.hashmark[i]);
+      std::string hashmark = last_k_char + input.hashmark[i].substr(find_hash(input.hashmark[i]));
+      std::string replaced = replacement_function(input, hashmark);
       // std::cout << nb_ghosts << std::endl;
       // std::cout << replaced << std::endl;
-      if (replaced[find_hash(input.hashmark[i])] == '#') {
+      if (replaced[find_hash(hashmark)] == '#') {
         nb_impossible_replacement++;
         os << "#";
+        last_k_char = "";
       } else {
         if (replaced.size() >= k){
           nb_ghosts += update_frequency_and_count_ghosts(input, replaced);
         }
-        if (replaced.size() == input.hashmark[i].size())
-          os << replaced[k - 1];
+        if (replaced.size() == hashmark.size()){
+          os << replaced[find_hash(hashmark)];
+          last_k_char+= replaced[find_hash(hashmark)];
+        }
       }
       i++;
     } else {
       os << c;
+      last_k_char += c;
     }
+    if (last_k_char.size() >= k) last_k_char.erase(0, 1); // remove first character
   }
   is.close(); // close file
   os.close(); // close file
@@ -308,7 +315,9 @@ void parse_input(std::string input_file, std::string forbiden_pattern_file,
       input.hashmark.push_back(window + "#");
       window = "";
       hash_has_back_context = false;
-    } else {
+    }
+    else
+    {
       input.alphabet.insert(c);
       if (window.size() < k - 1)
         window += c;
