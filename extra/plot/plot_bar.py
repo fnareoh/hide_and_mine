@@ -91,11 +91,14 @@ if metric == "distortion":
     plt.xticks(fontsize=14)
     plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
 
-rects1 = ax.bar(x - width / 2, plot0, width / 2, label="TPM")
-rects2 = ax.bar(x, plot1, width / 2, label="ILP")
-rects3 = ax.bar(x + width / 2, plot2, width / 2, label="HEU")  # h2
-# rects3 = ax.bar(x + width / 2, plot[2], width / 2, label="h1") #h1
-# rects4 = ax.bar(x + width, plot[3], width / 2, label="h2") #h2
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
+    rects1 = ax.bar(x - width / 2, plot0, width / 2, label="HEU")
+    rects2 = ax.bar(x, plot1, width / 2, label="CONST")
+    rects3 = ax.bar(x + width / 2, plot2, width / 2, label="RAND")
+else:
+    rects1 = ax.bar(x - width / 2, plot0, width / 2, label="TPM")
+    rects2 = ax.bar(x, plot1, width / 2, label="ILP")
+    rects3 = ax.bar(x + width / 2, plot2, width / 2, label="HEU")
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
 if metric == "ghosts":
@@ -133,7 +136,10 @@ def autolabel(rects):
         )
 
 
-if metric == "ghosts":
+if (
+    metric == "ghosts"
+    and data["method"][0][0] != "minimize_sum_unfrequent_distance_to_tau"
+):
     autolabel(rects1)
     autolabel(rects2)
     autolabel(rects3)
@@ -142,6 +148,10 @@ if metric == "ghosts":
 # plt.legend().remove()
 plt.legend(prop={"size": 14})
 if metric == "distortion":
+    plt.legend(
+        loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
+    )
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
     plt.legend(
         loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
     )

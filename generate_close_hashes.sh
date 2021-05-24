@@ -1,3 +1,4 @@
+#!/bin/bash -x
 generate(){
   local k=$1
   local tau=$2
@@ -32,9 +33,11 @@ generate_list_input(){
   do
     generate $default_k $default_tau ${list_input[$i_input]} $default_y $default_S
   done
+  cat data/results/${name}_*M_k_${default_k}_tau_${default_tau}_m_${default_S}.txt.comparison > data/results/${name}_len.summary
 }
 
 generate_all() {
+  generate_list_input
   for i_k in ${!list_k[@]}
   do
     generate ${list_k[$i_k]} $default_tau $default_input $default_y $default_S
@@ -43,30 +46,47 @@ generate_all() {
   do
     generate $default_k ${list_tau[$i_tau]} $default_input $default_y $default_S
   done
-  for i_S in ${!list_S[@]}
-  do
-    generate $default_k $default_tau $default_input ${list_y[$i_S]} ${list_S[$i_S]}
-  done
   cat data/results/${name}_k_*_tau_${default_tau}_m_${default_S}.txt.comparison > data/results/${name}.summary
   cat data/results/${name}_k_${default_k}_tau_*_m_${default_S}.txt.comparison > data/results/${name}_k_${default_k}.summary
-  cat data/results/${name}_k_${default_k}_tau_${default_tau}_m_*.txt.comparison > data/results/${name}_k_${default_k}_tau_${default_tau}.summary
+
 
 }
 
 generate_close_hashes(){
 default_input=data/original_data/P7_reads.fa
 name=P7_reads
-list_input=()
-default_k=11
-list_k=(9 11 13 15)
-default_tau=20
-list_tau=(5 10 20 30)
+list_input=("data/hashmark_input/P7_reads_1.0M.txt" "data/hashmark_input/P7_reads_1.5M.txt" "data/hashmark_input/P7_reads_2.0M.txt" "data/hashmark_input/P7_reads_2.5M.txt")
+default_k=9
+list_k=(8 9 10 11)
+default_tau=7
+list_tau=(3 5 7 10)
 default_S=0
 list_S=()
 default_y=35
 list_y=(35 35 35 35)
 
 generate_all
+
+#figures
 }
 
-generate_close_hashes
+figures () {
+    python extra/plot/plot_bar.py data/results/${name}.summary k ghosts
+    #python extra/plot/plot_bar.py data/results/${name}.summary k distortion
+    python extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau ghosts
+    #python extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau distortion
+}
+
+10_generate_close_hashes(){
+for i in {1..10}
+do
+  rm data/results/*
+  generate_close_hashes
+  mkdir data/results${i}
+  cp -r data/results/*.summary data/results${i}/
+done
+}
+
+#œgenerate_close_hashes
+10_generate_close_hashes
+

@@ -113,6 +113,11 @@ elif variation == "tau":
         str(data["tau"][i]) + "\n" + str(data["|S|"][i])
         for i in range(len(data["tau"]))
     ]
+elif variation == "n":
+    X = [data["n"][i] for i in range(len(data["n"]))]
+    labels = [
+        str(data["n"][i]) + "\n" + str(data["|S|"][i]) for i in range(len(data["n"]))
+    ]
 else:
     X = [data["nb_sensitive"][i] for i in range(len(data["k"]))]
     labels = [
@@ -132,11 +137,23 @@ width = 1.6  # the width of the bars
 
 _, sorted_labels = reorder(X, labels)
 _, plot0 = reorder(X, plot[0])
-_, varplot0 = reorder(X, plot_var[0])
+_, _varplot0 = reorder(X, plot_var[0])
 _, plot1 = reorder(X, plot[1])
-_, varplot1 = reorder(X, plot_var[1])
+_, _varplot1 = reorder(X, plot_var[1])
 _, plot2 = reorder(X, plot[2])
-_, varplot2 = reorder(X, plot_var[2])
+_, _varplot2 = reorder(X, plot_var[2])
+varplot0 = [
+    [plot0[i] - max(1e-2, plot0[i] - _varplot0[i]) for i in range(len(_varplot0))],
+    _varplot0,
+]
+varplot1 = [
+    [plot1[i] - max(1e-2, plot1[i] - _varplot1[i]) for i in range(len(_varplot1))],
+    _varplot1,
+]
+varplot2 = [
+    [plot2[i] - max(1e-2, plot2[i] - _varplot2[i]) for i in range(len(_varplot2))],
+    _varplot2,
+]
 
 fig, ax = plt.subplots()
 if metric == "distortion":
@@ -144,23 +161,29 @@ if metric == "distortion":
     plt.xticks(fontsize=14)
     plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
 
+labels = []
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
+    labels = ["HEU", "CONST", "RAND"]
+else:
+    labels = ["TPM", "HEU", "ILP"]
+
 rects1 = ax.bar(
     x - width / 2,
     plot0,
     width / 2,
-    label="TPM",
+    label=labels[0],
     yerr=varplot0,
     ecolor="dimgray",
     capsize=4,
 )
 rects2 = ax.bar(
-    x, plot1, width / 2, label="ILP", yerr=varplot1, ecolor="dimgray", capsize=4
+    x, plot1, width / 2, label=labels[1], yerr=varplot1, ecolor="dimgray", capsize=4
 )
 rects3 = ax.bar(
     x + width / 2,
     plot2,
     width / 2,
-    label="HEU",
+    label=labels[2],
     yerr=varplot2,
     ecolor="dimgray",
     capsize=4,
@@ -186,30 +209,22 @@ else:
 ax.set_xticks(x)
 ax.set_xticklabels(sorted_labels)
 
-
-def autolabel(rects):
-    """Attach a text label above each bar in *rects*, displaying its height."""
-    for rect in rects:
-        height = rect.get_height()
-        ax.annotate(
-            "{}".format(height),
-            xy=(rect.get_x() + rect.get_width() / 2, height + 30),
-            xytext=(0, -1),  # 3 points vertical offset
-            fontsize=12,
-            # backgroundcolor="w",
-            textcoords="offset points",
-            ha="center",
-            va="bottom",
-        )
-
-
 if metric == "ghosts":
-    ax.bar_label(rects1, fontsize=11)
-    ax.bar_label(rects2, fontsize=11)
-    ax.bar_label(rects3, fontsize=11)
-    # autolabel(rects1)
-    # autolabel(rects2)
-    # autolabel(rects3)
+    ax.bar_label(
+        rects1,
+        labels=[f"{round(v/1000,1)}K" if v > 1000 else v for v in plot0],
+        fontsize=7,
+    )
+    ax.bar_label(
+        rects2,
+        labels=[f"{round(v/1000,1)}K" if v > 1000 else v for v in plot1],
+        fontsize=7,
+    )
+    ax.bar_label(
+        rects3,
+        labels=[f"{round(v/1000,1)}K" if v > 1000 else v for v in plot2],
+        fontsize=7,
+    )
 
 # plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.5), ncol=4)
 # plt.legend().remove()
@@ -217,6 +232,10 @@ plt.legend(loc="best", prop={"size": 10})
 if metric == "distortion":
     plt.legend(
         loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
+    )
+elif labels[0] == "HEU":
+    plt.legend(
+        loc="upper center", bbox_to_anchor=(0.5, 1.18), ncol=3, prop={"size": 12},
     )
 plt.tight_layout()
 plt.gray()

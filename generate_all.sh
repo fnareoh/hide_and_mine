@@ -120,7 +120,7 @@ generate_all
 }
 
 ./compile.sh
-generate_OLD
+#generate_OLD
 generate_TRU
-generate_MSN
-generate_DNA
+#generate_MSN
+#generate_DNA

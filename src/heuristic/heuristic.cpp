@@ -372,6 +372,7 @@ int main(int argc, char **argv) {
          minimize_sum_unfrequent_distance_to_tau, input_file);
 
 #ifdef CLOSE_HASHES
+  std::srand(std::time(nullptr));
   output(input,"constant",constant_replacement,input_file);
   output(input,"random",random_replacement,input_file);
 #endif
