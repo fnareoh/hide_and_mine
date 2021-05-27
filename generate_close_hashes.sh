@@ -58,8 +58,8 @@ name=P7_reads
 list_input=("data/hashmark_input/P7_reads_1.0M.txt" "data/hashmark_input/P7_reads_1.5M.txt" "data/hashmark_input/P7_reads_2.0M.txt" "data/hashmark_input/P7_reads_2.5M.txt")
 default_k=9
 list_k=(8 9 10 11)
-default_tau=7
-list_tau=(3 5 7 10)
+default_tau=20
+list_tau=(10 20 30 40)
 default_S=0
 list_S=()
 default_y=35
@@ -87,6 +87,6 @@ do
 done
 }
 
-#œgenerate_close_hashes
+#generate_close_hashes
 10_generate_close_hashes
 
