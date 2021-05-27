@@ -67,6 +67,16 @@ def parse_10_results_files(file_name, variation, metric):
     var = copy.deepcopy(list_data[0])
     to_avg = ["distortion", "ghosts", "time"]
     for key, val in list_data[0].items():
+        if key == "|S|":
+            for i in range(len(val)):
+                avg[key][i] = 0
+                var[key][i] = 0
+                for r in range(N):
+                    avg[key][i] += list_data[r][key][i]
+                avg[key][i] = avg[key][i] // N
+                for r in range(N):
+                    var[key][i] += (list_data[r][key][i] - avg[key][i]) ** 2
+                var[key][i] = isqrt(var[key][i] // N)
         if key in to_avg:
             for i in range(len(val)):
                 for j in range(len(val[i])):
@@ -86,12 +96,42 @@ def parse_10_results_files(file_name, variation, metric):
                         var[key][i][j] = math.sqrt(round(var[key][i][j] / N, 4))
                     else:
                         var[key][i][j] = isqrt(var[key][i][j] // N)
-    # pprint(avg)
+    pprint(avg)
     return avg, var
 
 
 avg, var = parse_10_results_files(file_name, variation, metric)
 data = avg
+
+labels = []
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
+    labels = ["G-HEU", "FIXED", "RANDOM"]
+else:
+    labels = ["TPM", "ILP", "HEU"]
+
+with open("data/avg_results/" + file_name + ".ghosts", "w") as file:
+    writer = csv.writer(file)
+    # writer.writerow(["dataset"] + labels)
+    for i in range(len(data["k"])):
+        name_dataset = (
+            f"{file_name[:3]}_k_{data['k'][i]}_tau_{data['tau'][i]}_S_{data['|S|'][i]}"
+        )
+        line = [name_dataset]
+        for j in range(len(labels)):
+            line.append(data["ghosts"][j][i])
+        writer.writerow(line)
+
+with open("data/avg_results/" + file_name + ".distortion", "w") as file:
+    writer = csv.writer(file)
+    # writer.writerow(["dataset"] + labels)
+    for i in range(len(data["k"])):
+        name_dataset = (
+            f"{file_name[:3]}_k_{data['k'][i]}_tau_{data['tau'][i]}_S_{data['|S|'][i]}"
+        )
+        line = [name_dataset]
+        for j in range(len(labels)):
+            line.append(data["distortion"][j][i])
+        writer.writerow(line)
 
 
 def reorder(list1, list2):
@@ -104,23 +144,23 @@ def reorder(list1, list2):
 
 if variation == "k":
     X = [data["k"][i] for i in range(len(data["k"]))]
-    labels = [
+    x_labels = [
         str(data["k"][i]) + "\n" + str(data["|S|"][i]) for i in range(len(data["k"]))
     ]
 elif variation == "tau":
     X = [data["tau"][i] for i in range(len(data["k"]))]
-    labels = [
+    x_labels = [
         str(data["tau"][i]) + "\n" + str(data["|S|"][i])
         for i in range(len(data["tau"]))
     ]
 elif variation == "n":
     X = [data["n"][i] for i in range(len(data["n"]))]
-    labels = [
+    x_labels = [
         str(data["n"][i]) + "\n" + str(data["|S|"][i]) for i in range(len(data["n"]))
     ]
 else:
     X = [data["nb_sensitive"][i] for i in range(len(data["k"]))]
-    labels = [
+    x_labels = [
         str(data["nb_sensitive"][i]) + "\n" + str(data["|S|"][i])
         for i in range(len(data["nb_sensitive"]))
     ]
@@ -132,10 +172,10 @@ else:
     plot = [data["distortion"][i] for i in range(3)]
     plot_var = [var["distortion"][i] for i in range(3)]
 
-x = np.arange(start=0, stop=3 * len(labels), step=3)  # the label locations
+x = np.arange(start=0, stop=3 * len(x_labels), step=3)  # the label locations
 width = 1.6  # the width of the bars
 
-_, sorted_labels = reorder(X, labels)
+_, sorted_labels = reorder(X, x_labels)
 _, plot0 = reorder(X, plot[0])
 _, _varplot0 = reorder(X, plot_var[0])
 _, plot1 = reorder(X, plot[1])
@@ -160,12 +200,6 @@ if metric == "distortion":
     fig, ax = plt.subplots(figsize=(4, 5))
     plt.xticks(fontsize=14)
     plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
-
-labels = []
-if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
-    labels = ["HEU", "CONST", "RAND"]
-else:
-    labels = ["TPM", "HEU", "ILP"]
 
 rects1 = ax.bar(
     x - width / 2,
@@ -197,13 +231,17 @@ if metric == "ghosts":
 else:
     ax.set_ylabel("Distortion")
 
-
+sym_nb_hashes = "|P|"
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
+    sym_nb_hashes = "δ"
 if variation == "k":
-    ax.set_xlabel("k\n|P|")
+    ax.set_xlabel("k\n" + sym_nb_hashes)
 elif variation == "tau":
-    ax.set_xlabel("τ" + "\n" + "|P|", fontsize=19)
+    ax.set_xlabel("τ" + "\n" + sym_nb_hashes, fontsize=19)
+elif variation == "n":
+    ax.set_xlabel("n\n" + sym_nb_hashes)
 else:
-    ax.set_xlabel("# sensitive patterns\n|P|")
+    ax.set_xlabel("# sensitive patterns\n" + sym_nb_hashes)
 
 # ax.set_title(metric.capitalize() + " vs " + variation + " - " + dataset)
 ax.set_xticks(x)
@@ -233,7 +271,7 @@ if metric == "distortion":
     plt.legend(
         loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
     )
-elif labels[0] == "HEU":
+elif labels[0] == "G-HEU":
     plt.legend(
         loc="upper center", bbox_to_anchor=(0.5, 1.18), ncol=3, prop={"size": 12},
     )
