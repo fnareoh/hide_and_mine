@@ -17,6 +17,7 @@ generate_list_input(){
   do
     generate $default_k $default_tau ${list_input[$i_input]} $default_y $default_S
   done
+  cat data/results/${generic_name}*_k_${default_k}_tau_${default_tau}_m_${default_S}.txt.comparison > data/results/${generic_name}.summary
 }
 
 generate_all() {
@@ -41,6 +42,7 @@ generate_all() {
 generate_SYN(){
 default_input=data/original_data/random20M_char.txt
 name=random20M_char
+generic_name=random
 list_input=("data/original_data/random5M_char.txt" "data/original_data/random10M_char.txt" "data/original_data/random15M_char.txt" "data/original_data/random20M_char.txt")
 default_k=5
 list_k=(3 4 5 6)
@@ -97,8 +99,8 @@ default_tau=200
 list_tau=(100 150 200 300)
 default_S=240
 list_S=(60 120 240 480)
-default_y=400
-list_y=(400 400 400 400)
+default_y=500
+list_y=(500 500 500 500)
 
 generate_all
 }
@@ -120,7 +122,8 @@ generate_all
 }
 
 ./compile.sh
-#generate_OLD
+generate_OLD
 generate_TRU
-#generate_MSN
-#generate_DNA
+generate_MSN
+generate_DNA
+generate_SYN
