@@ -1,15 +1,15 @@
 #include "gurobi_c++.h"
 using namespace std;
 
-#include <chrono>        // chrono
-#include <fstream>       // std::ifstream
-#include <iostream>      // cin, cout
-#include <map>           //map
-#include <string>        // string
+#include <chrono> // chrono
+#include <fstream> // std::ifstream
+#include <iostream> // cin, cout
+#include <map> //map
+#include <string> // string
 #include <unordered_map> //unordered_map
 #include <unordered_set> // unordered_set
-#include <utility>       // pair
-#include <vector>        // vector
+#include <utility> // pair
+#include <vector> // vector
 
 int k = 0;
 int tau = 0;
@@ -136,7 +136,7 @@ void output(vector<vector<char>> replacement, Input &input,
 
 int count_critical(int i_, int j_, string replaced, Input &input,
                    vector<GRBLinExpr> &vect_lhs, GRBVar **x) {
-  for (int it = 0; it <= replaced.size() - k; it++) {
+  for (int it = 0; it <= (int) replaced.size() - k; it++) {
     std::string kmer = replaced.substr(it, k);
     if (is_critical(kmer, input)) {
       if (input.forbiden_patterns.count(kmer) == 1) {
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 
     // Create an environment
     GRBEnv env = GRBEnv(true);
-    env.set("LogFile", "dat/HM_ilp.log");
+    env.set("LogFile", "data/HM_ilp.log");
     env.start();
 
     // Create an empty model
@@ -257,6 +257,8 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    std::cout << "Finished building model!" << std::endl;
+
     // Optimize model
     model.optimize();
     int status = model.get(GRB_IntAttr_Status);
@@ -293,6 +295,9 @@ int main(int argc, char *argv[]) {
   } catch (GRBException e) {
     cout << "Error code = " << e.getErrorCode() << endl;
     cout << e.getMessage() << endl;
+  } catch (const std::exception &exc) {
+    // catch anything thrown within try block that derives from std::exception
+    std::cerr << exc.what();
   } catch (...) {
     cout << "Exception during optimization" << endl;
   }
