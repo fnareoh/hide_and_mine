@@ -191,7 +191,7 @@ plt.tight_layout()
 plt.gray()
 # plt.show()
 fig.savefig(
-    "data/figures/"
+    "data/figures/avg_time_"
     + file_name.split("/")[-1].split(".")[0]
     + "_"
     + variation

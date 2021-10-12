@@ -1,35 +1,33 @@
 #!/bin/sh -x
-rm data/results/*.svg
-rm data/figures/*.svg
 
 for NAME in olden dna msnbc truck
 do
-for FILE in data/results1/${NAME}_char.summary
+for FILE in data/results/${NAME}_char.summary
 do
     F="$(basename -- $FILE)"
-    python extra/plot/plot_avg_bar.py $F k ghosts
-    python extra/plot/plot_avg_bar.py $F k distortion
+    python extra/plot/plot_bar.py $FILE k ghosts
+    python extra/plot/plot_bar.py $FILE k distortion
 done
 
-for FILE in data/results1/${NAME}*char*k_?.summary
+for FILE in data/results/${NAME}*char*k_?.summary
 do
    F="$(basename -- $FILE)"
-   python extra/plot/plot_avg_bar.py $F tau ghosts
-   python extra/plot/plot_avg_bar.py $F tau distortion
+   python extra/plot/plot_bar.py $FILE tau ghosts
+   python extra/plot/plot_bar.py $FILE tau distortion
 done
 
-for FILE in data/results1/${NAME}*char*k_??.summary
+for FILE in data/results/${NAME}*char*k_??.summary
 do
    F="$(basename -- $FILE)"
-   python extra/plot/plot_avg_bar.py $F tau ghosts
-   python extra/plot/plot_avg_bar.py $F tau distortion
+   python extra/plot/plot_bar.py $FILE tau ghosts
+   python extra/plot/plot_bar.py $FILE tau distortion
 done
 
-for FILE in data/results1/${NAME}*char*k*tau*.summary
+for FILE in data/results/${NAME}*char*k*tau*.summary
 do
    F="$(basename -- $FILE)"
-   python extra/plot/plot_avg_bar.py $F nb_sensitive ghosts
-   python extra/plot/plot_avg_bar.py $F nb_sensitive distortion
+   python extra/plot/plot_bar.py $FILE nb_sensitive ghosts
+   python extra/plot/plot_bar.py $FILE nb_sensitive distortion
 done
 done
 
