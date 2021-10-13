@@ -7,9 +7,23 @@ generate(){
   local S=$5 #number of sensitve pattern
   local input=$(basename -- "$file")
   local NAME="${input%.*}_k_${k}_tau_${tau}_m_$S.txt"
+  k_minimal_absent=(11 12 13)
+  pwd=$(pwd)
+
+
 
   #generate input
-  python extra/fasta_to_hasmark_input.py $file data/hashmark_input/$NAME
+  ln -s "${pwd}/data/hashmark_input/${input}" "${pwd}/data/hashmark_input/${NAME}"
+  echo "0" > data/parameters/$NAME
+  echo "0" >> data/parameters/$NAME
+  echo "${S}" >> data/parameters/$NAME
+  cat data/parameters/$input >> data/parameters/$NAME
+  for item in $k_minimal_absent
+  do
+    if [ "${k}" == "${item}" ]; then
+      (shuf "${pwd}/data/sensitive_pattern/P7_reads_minimal_absent/P7_reads_k_${k}.sensitive" | head -$S ) > "${pwd}/data/sensitive_pattern/${NAME}"
+     fi
+  done
   touch data/sensitive_pattern/$NAME
 
   #compile for close hashes
@@ -53,14 +67,24 @@ generate_all() {
 }
 
 generate_close_hashes(){
-default_input=data/original_data/P7_reads.fa
+#Generate limited input
+python extra/fasta_to_hasmark_input.py data/original_data/P7_reads.fa data/hashmark_input/P7_reads.txt
+head -c 1000000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_1.0M.txt
+head -c 1500000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_1.5M.txt
+head -c 2000000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_2.0M.txt
+head -c 2500000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_2.5M.txt
+default_input="data/hashmark_input/P7_reads_2.5M.txt"
 name=P7_reads
 list_input=("data/hashmark_input/P7_reads_1.0M.txt" "data/hashmark_input/P7_reads_1.5M.txt" "data/hashmark_input/P7_reads_2.0M.txt" "data/hashmark_input/P7_reads_2.5M.txt")
-default_k=9
-list_k=(8 9 10 11)
+for file in $list_input
+do
+  grep -o '#' $file | wc -l > data/parameters/$(basename -- "$file")
+done
+default_k=11
+list_k=(11 12 13)
 default_tau=20
 list_tau=(10 20 30 40)
-default_S=0
+default_S=1000
 list_S=()
 default_y=35
 list_y=(35 35 35 35)
@@ -87,6 +111,7 @@ do
 done
 }
 
+unzip data/original_data/P7_reads.zip -d data/original_data/
 #generate_close_hashes
 10_generate_close_hashes
 
