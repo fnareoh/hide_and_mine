@@ -180,7 +180,11 @@ std::string random_replacement(
     int r = rand() % input.alphabet.size(); //not really random
     auto it = std::begin(input.alphabet);
     std::advance(it,r);
-    return hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
+    std::string out = hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
+    for (int i = 0; i <= out.size() - k; i++) {
+      if (input.forbiden_patterns.count(out.substr(i, k)) == 1) return hashmark;
+    }
+    return out;
 }
 
 
@@ -192,7 +196,11 @@ std::string constant_replacement(
   if (hashmark.size() == 2*k-1) pos_hashmark = k-1;
   else pos_hashmark = find_hash(hashmark);
   auto it = std::begin(input.alphabet);
-  return hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
+  std::string out = hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
+  for (int i = 0; i <= out.size() - k; i++) {
+    if (input.forbiden_patterns.count(out.substr(i, k)) == 1) return hashmark;
+  }
+  return out;
   }
 
 
