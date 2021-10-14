@@ -10,21 +10,29 @@ generate(){
   k_minimal_absent=(11 12 13)
   pwd=$(pwd)
 
+  status=1
+  while [ $status -ne 0 ]; do
+    #generate input
+    for item in $k_minimal_absent
+    do
+      if [ "${k}" == "${item}" ]; then
+        (shuf "${pwd}/data/sensitive_pattern/P7_reads_minimal_absent/P7_reads_k_${k}.sensitive" | head -$S ) > "${pwd}/data/sensitive_pattern/${NAME}"
+       fi
+    done
+    touch data/sensitive_pattern/$NAME
 
+    #ln -s "${pwd}/data/hashmark_input/${input}" "${pwd}/data/hashmark_input/${NAME}"
+    python3 extra/find_sen_pos.py $file data/sensitive_pattern/$NAME
+    echo "0" > data/parameters/$NAME
+    echo "0" >> data/parameters/$NAME
+    wc -l < data/sensitive_pattern/$NAME >> data/parameters/$NAME
+    wc -l < data/sensitive_pos/$NAME >> data/parameters/$NAME
 
-  #generate input
-  ln -s "${pwd}/data/hashmark_input/${input}" "${pwd}/data/hashmark_input/${NAME}"
-  echo "0" > data/parameters/$NAME
-  echo "0" >> data/parameters/$NAME
-  echo "${S}" >> data/parameters/$NAME
-  cat data/parameters/$input >> data/parameters/$NAME
-  for item in $k_minimal_absent
-  do
-    if [ "${k}" == "${item}" ]; then
-      (shuf "${pwd}/data/sensitive_pattern/P7_reads_minimal_absent/P7_reads_k_${k}.sensitive" | head -$S ) > "${pwd}/data/sensitive_pattern/${NAME}"
-     fi
+    export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
+    ./extra/pkdd/main $file data/sensitive_pos/$NAME $k $tau data/output/$NAME.cost data/output/$NAME.weight $tau data/sensitive_pattern/$NAME data/output/$NAME.knapsack_pkdd data/output/$NAME.output_pkdd data/hashmark_input/$NAME
+
+    status=$?
   done
-  touch data/sensitive_pattern/$NAME
 
   #compile for close hashes
   cd src/heuristic
@@ -39,7 +47,7 @@ generate(){
   fi
 
   #evaluate
-  python extra/evaluate_all.py $k $tau data/hashmark_input/$NAME data/sensitive_pattern/$NAME $NAME close_hashes
+  python3 extra/evaluate_all.py $k $tau data/hashmark_input/$NAME data/sensitive_pattern/$NAME $NAME close_hashes
 }
 
 generate_list_input(){
@@ -68,7 +76,7 @@ generate_all() {
 
 generate_close_hashes(){
 #Generate limited input
-python extra/fasta_to_hasmark_input.py data/original_data/P7_reads.fa data/hashmark_input/P7_reads.txt
+python3 extra/fasta_to_hasmark_input.py data/original_data/P7_reads.fa data/hashmark_input/P7_reads.txt
 head -c 1000000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_1.0M.txt
 head -c 1500000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_1.5M.txt
 head -c 2000000 data/hashmark_input/P7_reads.txt > data/hashmark_input/P7_reads_2.0M.txt
@@ -91,14 +99,14 @@ list_y=(35 35 35 35)
 
 generate_all
 
-#figures
+figures
 }
 
 figures () {
-    python extra/plot/plot_bar.py data/results/${name}.summary k ghosts
-    #python extra/plot/plot_bar.py data/results/${name}.summary k distortion
-    python extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau ghosts
-    #python extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau distortion
+    python3 extra/plot/plot_bar.py data/results/${name}.summary k ghosts
+    #python3 extra/plot/plot_bar.py data/results/${name}.summary k distortion
+    python3 extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau ghosts
+    #python3 extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau distortion
 }
 
 10_generate_close_hashes(){
@@ -111,7 +119,11 @@ do
 done
 }
 
-unzip data/original_data/P7_reads.zip -d data/original_data/
+if [[ ! -f data/original_data/P7_reads.fa ]]
+then
+    unzip data/original_data/P7_reads.zip -d data/original_data/
+fi
+
 #generate_close_hashes
 10_generate_close_hashes
 
