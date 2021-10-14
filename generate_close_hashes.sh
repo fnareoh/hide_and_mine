@@ -103,10 +103,21 @@ figures
 }
 
 figures () {
+    python3 extra/plot/plot_bar.py data/results/${name}_len.summary n ghosts
+    #python3 extra/plot/plot_bar.py data/results/${name}_len.summary n distortion
     python3 extra/plot/plot_bar.py data/results/${name}.summary k ghosts
     #python3 extra/plot/plot_bar.py data/results/${name}.summary k distortion
     python3 extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau ghosts
     #python3 extra/plot/plot_bar.py data/results/${name}_k_${default_k}.summary tau distortion
+}
+
+avg_figures () {
+    python3 extra/plot/plot_avg_bar.py ${name}_len.summary n ghosts
+    #python3 extra/plot/plot_avg_bar.py ${name}_len.summary n distortion
+    python3 extra/plot/plot_avg_bar.py ${name}.summary k ghosts
+    #python3 extra/plot/plot_avg_bar.py ${name}.summary k distortion
+    python3 extra/plot/plot_avg_bar.py ${name}_k_${default_k}.summary tau ghosts
+    #python3 extra/plot/plot_avg_bar.py ${name}_k_${default_k}.summary tau distortion
 }
 
 10_generate_close_hashes(){
@@ -117,6 +128,8 @@ do
   mkdir data/results${i}
   cp -r data/results/*.summary data/results${i}/
 done
+
+avg_figures
 }
 
 if [[ ! -f data/original_data/P7_reads.fa ]]
@@ -124,6 +137,6 @@ then
     unzip data/original_data/P7_reads.zip -d data/original_data/
 fi
 
-#generate_close_hashes
-10_generate_close_hashes
+generate_close_hashes
+#10_generate_close_hashes
 
