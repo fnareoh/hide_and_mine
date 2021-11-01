@@ -11,16 +11,20 @@ done
 
 for FILE in data/results/${NAME}*char*k_?.summary
 do
+   if [ -f "$FILE" ]; then
    F="$(basename -- $FILE)"
    python3 extra/plot/plot_bar.py $FILE tau ghosts
    python3 extra/plot/plot_bar.py $FILE tau distortion
+   fi
 done
 
 for FILE in data/results/${NAME}*char*k_??.summary
 do
+   if [ -f "$FILE" ]; then
    F="$(basename -- $FILE)"
    python3 extra/plot/plot_bar.py $FILE tau ghosts
    python3 extra/plot/plot_bar.py $FILE tau distortion
+   fi
 done
 
 for FILE in data/results/${NAME}*char*k*tau*.summary
