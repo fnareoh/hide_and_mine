@@ -6,6 +6,15 @@ import csv
 from os import path
 
 
+def pos_sharp(T):
+    # function returns the position of the first #
+    # if there is one, else returns -1
+    for j in range(len(T)):
+        if T[j] == "#":
+            return j
+    return -1
+
+
 # Input: k tau input_file forbiden_patterns_file output_file
 k = int(sys.argv[1])
 tau = int(sys.argv[2])
@@ -34,6 +43,19 @@ parameters = []
 with open(input_file, "r") as file:
     S = file.read().replace("\n", "")
 
+i = 0
+kmers_occ = defaultdict(int)
+# Compute the ditribution of context in front and behind
+while i + k < len(S):
+    p = pos_sharp(S[i : i + k])
+    if p == -1:
+        # Get all the kmer of context
+        while i + k - 1 < len(S) and S[i + k - 1] != "#":
+            kmers_occ[S[i : i + k]] += 1
+            i += 1
+        i += k
+    else:
+        i += p + 1
 
 with open(pattern_file, "r") as file:
     forbiden_patterns = file.read().split("\n")
@@ -43,15 +65,6 @@ with open("data/parameters/" + file_name, "r") as file:
     parameters.pop()
     parameters = list(map(int, parameters))
 parameters[-1] -= 1  # HACK: because the first line of sens_pos is the number of occ
-
-
-def pos_sharp(T):
-    # function returns the position of the first #
-    # if there is one, else returns -1
-    for j in range(len(T)):
-        if T[j] == "#":
-            return j
-    return -1
 
 
 def evaluate(name, writer):
@@ -70,20 +83,6 @@ def evaluate(name, writer):
     with open("data/output/" + file_name + ".output_" + name + "_time", "r") as file:
         time = float(file.read())
     print("time:", time)
-
-    i = 0
-    kmers_occ = defaultdict(int)
-    # Compute the ditribution of context in front and behind
-    while i + k < len(S):
-        p = pos_sharp(S[i : i + k])
-        if p == -1:
-            # Get all the kmer of context
-            while i + k - 1 < len(S) and S[i + k - 1] != "#":
-                kmers_occ[S[i : i + k]] += 1
-                i += 1
-            i += k
-        else:
-            i += p + 1
 
     i = 0
     new_kmers_occ = defaultdict(int)
