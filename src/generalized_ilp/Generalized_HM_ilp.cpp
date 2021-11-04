@@ -89,6 +89,9 @@ void parse_input(string input_file, string forbiden_pattern_file,
     }
   }
   is.close(); // close file
+  if (!hash_has_back_context) {
+    input.hashmark_context.back().second = window;
+  }
 
   cout << "size kmer frequency: " << input.kmers_frequency.size() << endl;
   input.nb_hashmark = input.hashmark_context.size();
@@ -166,6 +169,37 @@ int count_critical(int i_, int j_, string replaced, Input &input,
   return 0;
 }*/
 
+vector<int> init_replacement(int n) {
+  vector<int> J(n, 0);
+  return J;
+}
+
+void next_replacement(vector<int> &J, int alphabet_size) {
+  for (int i = 0; i < J.size(); i++) {
+    if (J[i] == alphabet_size - 1) {
+      J[i] = 0;
+    } else {
+      J[i] += 1;
+      break;
+    }
+  }
+}
+
+string apply_replacement(int s, int t, vector<int> &J, Input &input) {
+  int p_s, p_t;
+  string total_context = input.hashmark_context[s].first;
+  for (int i = s; i <= t; i++) {
+    if (i == s)
+      p_s = total_context.size();
+    if (i == t)
+      p_t = total_context.size();
+    total_context +=
+        input.alphabet[J[i - s]] + input.hashmark_context[i].second;
+  }
+  cout << total_context << endl;
+  return total_context;
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 5)
     cout << "You must give 4 arguments: "
@@ -207,107 +241,129 @@ int main(int argc, char *argv[]) {
           (int)pow((float)input.alphabet.size(), nb_to_replace);
       x[i] = model.addVars(input.alphabet.size(), GRB_INTEGER);
     }
-    /*
+
     vector<GRBLinExpr> vect_lhs;
     // count added critical kmer
-    for (map<pair<string, string>, int>::iterator it =
-             input.context_hashmark_index.begin();
-         it != input.context_hashmark_index.end(); ++it) {
-      auto context = it->first;
-      string replaced;
-      for (int j = 0; j < input.alphabet.size(); j++) {
-        if (input.alphabet[j] == '\0')
-          replaced = context.first + context.second;
-        else
-          replaced = context.first + input.alphabet[j] + context.second;
-        count_critical(it->second, j, replaced, input, vect_lhs, x);
+    for (const pair<int, int> &p_hash : input.P) {
+      int s = p_hash.first;
+      int t = p_hash.second;
+      int p_s, p_t;
+      string total_context = input.hashmark_context[s].first;
+      for (int i = s; i <= t; i++) {
+        if (i == s)
+          p_s = total_context.size();
+        if (i == t)
+          p_t = total_context.size();
+        total_context += "#" + input.hashmark_context[i].second;
       }
-    }
-    cout << "Finished counting added critical" << endl;
-
-    GRBVar *z = model.addVars(input.nb_critical, GRB_BINARY);
-
-    // Create objective
-    GRBLinExpr obj = 0;
-    for (int l = 0; l < input.nb_critical; l++)
-      obj += z[l];
-    // Set objective: minimize the sum of z
-    model.setObjective(obj, GRB_MINIMIZE);
-
-    // limit added kmer or consider it as a ghost
-    for (int l = 0; l < input.nb_critical; l++) {
-      vect_lhs[l] -= z[l] * k * input.nb_hashmark;
-      int e_l = tau - 1 - input.kmers_frequency[input.list_criticals[l]];
-      model.addConstr(vect_lhs[l] <= e_l, "limit occurences or count as
-  ghost");
-    }
-
-    // x[i][j] non negatives
-    for (int i = 0; i < nb_context; i++) {
-      for (int j = 0; j < input.alphabet.size(); j++) {
-        model.addConstr(x[i][j] >= 0, "non negative x");
+      cout << total_context << endl;
+      vector<int> J = init_replacement(t - s + 1);
+      int nb_replacement = (int)pow((float)input.alphabet.size(), t - s + 1);
+      for (int k = 0; k < nb_replacement; k++) {
+        string S = apply_replacement(s, t, J, input);
+        next_replacement(J, input.alphabet.size());
       }
     }
 
-    // No forbiden replacement
-    vector<int> count_forbidden_replacement(nb_context, 0);
-    for (auto &r : input.forbiden_replacements) {
-      model.addConstr(x[r.first][r.second] == 0, "no sensitive pattern");
-      count_forbidden_replacement[r.first]++;
+    /*
+for (map<pair<string, string>, int>::iterator it =
+         input.context_hashmark_index.begin();
+     it != input.context_hashmark_index.end(); ++it) {
+  auto context = it->first;
+  string replaced;
+  for (int j = 0; j < input.alphabet.size(); j++) {
+    if (input.alphabet[j] == '\0')
+      replaced = context.first + context.second;
+    else
+      replaced = context.first + input.alphabet[j] + context.second;
+    count_critical(it->second, j, replaced, input, vect_lhs, x);
+  }
+}
+cout << "Finished counting added critical" << endl;
+
+GRBVar *z = model.addVars(input.nb_critical, GRB_BINARY);
+
+// Create objective
+GRBLinExpr obj = 0;
+for (int l = 0; l < input.nb_critical; l++)
+  obj += z[l];
+// Set objective: minimize the sum of z
+model.setObjective(obj, GRB_MINIMIZE);
+
+// limit added kmer or consider it as a ghost
+for (int l = 0; l < input.nb_critical; l++) {
+  vect_lhs[l] -= z[l] * k * input.nb_hashmark;
+  int e_l = tau - 1 - input.kmers_frequency[input.list_criticals[l]];
+  model.addConstr(vect_lhs[l] <= e_l, "limit occurences or count as
+ghost");
+}
+
+// x[i][j] non negatives
+for (int i = 0; i < nb_context; i++) {
+  for (int j = 0; j < input.alphabet.size(); j++) {
+    model.addConstr(x[i][j] >= 0, "non negative x");
+  }
+}
+
+// No forbiden replacement
+vector<int> count_forbidden_replacement(nb_context, 0);
+for (auto &r : input.forbiden_replacements) {
+  model.addConstr(x[r.first][r.second] == 0, "no sensitive pattern");
+  count_forbidden_replacement[r.first]++;
+}
+
+GRBLinExpr lhs;
+int nb_impossible_replacement = 0;
+// All hashmark must have a replacement
+for (int i = 0; i < nb_context; i++) {
+  if (count_forbidden_replacement[i] >= input.alphabet.size()) {
+    nb_impossible_replacement += input.context_hashmark_count[i];
+  } else {
+    lhs = 0;
+    for (int j = 0; j < input.alphabet.size(); j++) {
+      lhs += x[i][j];
     }
+    model.addConstr(lhs == input.context_hashmark_count[i],
+                    "all hashmark are replaced");
+  }
+}
 
-    GRBLinExpr lhs;
-    int nb_impossible_replacement = 0;
-    // All hashmark must have a replacement
-    for (int i = 0; i < nb_context; i++) {
-      if (count_forbidden_replacement[i] >= input.alphabet.size()) {
-        nb_impossible_replacement += input.context_hashmark_count[i];
-      } else {
-        lhs = 0;
-        for (int j = 0; j < input.alphabet.size(); j++) {
-          lhs += x[i][j];
-        }
-        model.addConstr(lhs == input.context_hashmark_count[i],
-                        "all hashmark are replaced");
-      }
-    }
+std::cout << "Finished building model!" << std::endl;
 
-    std::cout << "Finished building model!" << std::endl;
+// Optimize model
+model.optimize();
+int status = model.get(GRB_IntAttr_Status);
 
-    // Optimize model
-    model.optimize();
-    int status = model.get(GRB_IntAttr_Status);
+if ((status == GRB_INF_OR_UNBD) || (status == GRB_INFEASIBLE) ||
+    (status == GRB_UNBOUNDED)) {
+  cout << "The model cannot be solved "
+       << "because it is infeasible or unbounded" << endl;
+  return 1;
+}
+if (status != GRB_OPTIMAL) {
+  cout << "Optimization was stopped with status " << status << endl;
+  return 1;
+}
 
-    if ((status == GRB_INF_OR_UNBD) || (status == GRB_INFEASIBLE) ||
-        (status == GRB_UNBOUNDED)) {
-      cout << "The model cannot be solved "
-           << "because it is infeasible or unbounded" << endl;
-      return 1;
-    }
-    if (status != GRB_OPTIMAL) {
-      cout << "Optimization was stopped with status " << status << endl;
-      return 1;
-    }
+// Print x and z result
+for (int i = 0; i < nb_context; i++) {
+  for (int j = 0; j < input.alphabet.size(); j++) {
+    for (int occ = 0; occ < x[i][j].get(GRB_DoubleAttr_X); occ++)
+      replacement[i].push_back(input.alphabet[j]);
+  }
+}
 
-    // Print x and z result
-    for (int i = 0; i < nb_context; i++) {
-      for (int j = 0; j < input.alphabet.size(); j++) {
-        for (int occ = 0; occ < x[i][j].get(GRB_DoubleAttr_X); occ++)
-          replacement[i].push_back(input.alphabet[j]);
-      }
-    }
+int sum_z = 0;
+for (int l = 0; l < input.nb_critical; l++) {
+  sum_z += z[l].get(GRB_DoubleAttr_X);
+}
+cout << "Number of context with impossible_replacement: "
+     << nb_impossible_replacement << endl;
+cout << "Number of ghost: " << sum_z << endl;
 
-    int sum_z = 0;
-    for (int l = 0; l < input.nb_critical; l++) {
-      sum_z += z[l].get(GRB_DoubleAttr_X);
-    }
-    cout << "Number of context with impossible_replacement: "
-         << nb_impossible_replacement << endl;
-    cout << "Number of ghost: " << sum_z << endl;
+output(replacement, input, input_file);
 
-    output(replacement, input, input_file);
-
-    */
+*/
   } catch (GRBException e) {
     cout << "Error code = " << e.getErrorCode() << endl;
     cout << e.getMessage() << endl;
