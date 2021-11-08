@@ -139,7 +139,7 @@ int count_critical(int i_, int j_, string replaced, Input &input,
   for (int it = 0; it <= (int) replaced.size() - k; it++) {
     std::string kmer = replaced.substr(it, k);
     if (is_critical(kmer, input)) {
-      if (input.forbiden_patterns.count(kmer) == 1) {
+      if (input.forbiden_patterns.count(kmer) >= 1) {
         input.forbiden_replacements.push_back(make_pair(i_, j_));
         return 1;
       } else if (input.criticals_index.count(kmer) == 0) {
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
 
     // Create an empty model
     GRBModel model = GRBModel(env);
-    // model.set("TimeLimit", "200.0");
+    model.set("TimeLimit", "3600.0");
     model.set("Threads", "1");
 
     // Create variables
@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
     }
     if (status != GRB_OPTIMAL) {
       cout << "Optimization was stopped with status " << status << endl;
-      return 1;
+      if (model.get(GRB_IntAttr_SolCount) == 0) return 1;
     }
 
     // Print x and z result
