@@ -110,7 +110,7 @@ void parse_input(string input_file, string forbiden_pattern_file,
 }
 
 
-void output(vector<char> replacement, Input &input,
+void output(vector<char> &replacement, Input &input,
             std::string input_file) {
   std::ifstream is(input_file); // open file
   std::ofstream os("data/output/" +
@@ -123,7 +123,7 @@ void output(vector<char> replacement, Input &input,
       continue;
     }
     if (c == '#') {
-      assert(i_hash >= replacement.size());
+      assert(i_hash <= replacement.size());
       os << replacement[i_hash];
       i_hash++;
     } else {
@@ -166,27 +166,25 @@ int count_critical(int p, int r, string replacement, int p_s, int p_t, Input &in
   vector<GRBLinExpr> &vect_lhs, GRBVar **y){
       if (replacement.size() < k) return 0;
       //count critical due to replacement
-      //cout << "replacement size: " << replacement.size() << endl;
-      //cout << "kmer from : " << max(0,p_t-k+1) << " to " << min((int)replacement.size()-k,p_s) << endl;
       for (int i = max(0,p_t-k+1); i <= min((int)replacement.size()-k,p_s); i++){
-        //cout << "i: " << i << " k: " << k << endl;
         string kmer = replacement.substr(i, k);
-        //cout << "kmer: " << kmer << endl;
-        if (input.forbiden_patterns.count(kmer) == 1) {
-          input.forbiden_replacements.push_back(make_tuple(p, r));
-          return 1;
-        }
-      else if (input.criticals_index.count(kmer) == 0) {
-          // First time we see this critical kmer
-          input.criticals_index[kmer] = input.nb_critical;
-          input.list_criticals.push_back(kmer);
-          vector<int> coeff(input.alphabet.size(), 0);
-          GRBLinExpr lhs = 0;
-          vect_lhs.push_back(lhs);
-          input.nb_critical++;
-        }
-        // account for the kmer added
-        vect_lhs[input.criticals_index[kmer]] += y[p][r];
+        if (is_critical(kmer, input)) {
+          if (input.forbiden_patterns.count(kmer) == 1) {
+            input.forbiden_replacements.push_back(make_tuple(p, r));
+            return 1;
+          }
+        else if (input.criticals_index.count(kmer) == 0) {
+            // First time we see this critical kmer
+            input.criticals_index[kmer] = input.nb_critical;
+            input.list_criticals.push_back(kmer);
+            vector<int> coeff(input.alphabet.size(), 0);
+            GRBLinExpr lhs = 0;
+            vect_lhs.push_back(lhs);
+            input.nb_critical++;
+          }
+          // account for the kmer added
+          vect_lhs[input.criticals_index[kmer]] += y[p][r];
+      }
       }
     return 0;
   }
@@ -221,19 +219,23 @@ int main(int argc, char *argv[]) {
 
     // Create variables
     GRBVar **x = new GRBVar *[nb_context];
+    vector<GRBLinExpr> vect_sum_x(nb_context,0);
     for (int i = 0; i < nb_context; i++){
       x[i] = model.addVars(input.alphabet.size(), GRB_INTEGER);
       // x[i][j] non negatives
-      GRBLinExpr sum_x_i = 0;
+      vect_sum_x[i] = 0;
       for (int j = 0; j < input.alphabet.size(); j++) {
-        sum_x_i+=x[i][j];
+        vect_sum_x[i]+=x[i][j];
         model.addConstr(x[i][j] >= 0, "non negative x");
         model.addConstr(x[i][j] <= 1, "x less 1");
       }
-      model.addConstr(sum_x_i == 1, "replacing # by only one letter");
+      model.addConstr(vect_sum_x[i] == 1, "replacing # by only one letter");
     }
 
+    cout << "Done with x constraints " << endl;
+
     GRBVar **y = new GRBVar *[input.P.size()];
+    vector<vector<GRBLinExpr>> vect_sum_x_y;
     for (int p = 0; p < input.P.size(); p++) {
       int nb_to_replace = input.P[p].second - input.P[p].first + 1; // t-s+1
       int nb_replacement =
@@ -243,17 +245,19 @@ int main(int argc, char *argv[]) {
       int s = input.P[p].first;
       int t = input.P[p].second;
       vector<int> J = init_replacement(t - s + 1);
+      vect_sum_x_y.push_back(vector<GRBLinExpr>(nb_replacement,0));
       for (int r = 0; r < nb_replacement; r++) {
         model.addConstr(y[p][r] >= 0, "non negative y");
-        model.addConstr(y[p][r] <= 1, "x less 1");
-        GRBLinExpr sum_x = 0;
+        model.addConstr(y[p][r] <= 1, "y less 1");
         for (int i = 0; i < J.size(); i++) {
-          sum_x+=x[s+i][J[i]];
+          vect_sum_x_y[p][r]+=x[s+i][J[i]];
         }
-        model.addConstr(t-s+y[p][r] >= sum_x,"replacement J made of single replacement");
+        model.addConstr(t-s+y[p][r] >= vect_sum_x_y[p][r],"replacement J made of single replacement");
         next_replacement(J, input.alphabet.size());
       }
     }
+
+    cout << "Done with y constraints " << endl;
 
     vector<GRBLinExpr> vect_lhs;
     // count added critical kmer
@@ -283,7 +287,7 @@ int main(int argc, char *argv[]) {
         }
         next_replacement(J, input.alphabet.size());
       }
-      if (impossible_replacement >= nb_replacement) nb_impossible_replacement+=1;
+      if (impossible_replacement >= nb_replacement) nb_impossible_replacement+=t-s+1;
     }
     cout << "Finished counting added critical" << endl;
 
@@ -309,6 +313,8 @@ int main(int argc, char *argv[]) {
     (status == GRB_UNBOUNDED)) {
       cout << "The model cannot be solved "
       << "because it is infeasible or unbounded" << endl;
+      cout << "Number of context with impossible_replacement: "
+      << nb_impossible_replacement << endl;
       return 1;
     }
     if (status != GRB_OPTIMAL) {
@@ -317,11 +323,12 @@ int main(int argc, char *argv[]) {
     }
 
     // Gather solution
-    vector<char> replacement(nb_context);
+    vector<char> replacement;
     for (int i = 0; i < nb_context; i++) {
       for (int j = 0; j < input.alphabet.size(); j++) {
-        if (x[i][j].get(GRB_DoubleAttr_X)==1)
-        replacement.push_back(input.alphabet[j]);
+        if (x[i][j].get(GRB_DoubleAttr_X)==1){
+          replacement.push_back(input.alphabet[j]);
+        }
       }
     }
 
