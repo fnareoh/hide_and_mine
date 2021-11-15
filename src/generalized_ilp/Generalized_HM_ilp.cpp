@@ -30,6 +30,7 @@ struct Input {
   map<string, int> criticals_index;
   vector<string> list_criticals;
   vector<tuple<int, int>> forbiden_replacements;
+  vector<bool> is_impossible;
 };
 
 bool is_critical(string kmer, Input &input) {
@@ -97,6 +98,7 @@ void parse_input(string input_file, string forbiden_pattern_file,
 
   cout << "size kmer frequency: " << input.kmers_frequency.size() << endl;
   input.nb_hashmark = input.hashmark_context.size();
+  input.is_impossible = vector<bool> (input.nb_hashmark,false);
   // Parse forbiden_patterns
   ifstream is_forbiden_patterns(forbiden_pattern_file); // open file
   string pattern;
@@ -124,6 +126,7 @@ void output(vector<char> &replacement, Input &input,
     }
     if (c == '#') {
       assert(i_hash <= replacement.size());
+      if (replacement[i_hash]=='#') cout << "nb # not replaced: " << i_hash << endl; 
       os << replacement[i_hash];
       i_hash++;
     } else {
@@ -219,6 +222,8 @@ int main(int argc, char *argv[]) {
 
     // Create variables
     GRBVar **x = new GRBVar *[nb_context];
+    GRBVar **y = new GRBVar *[input.P.size()];
+
     vector<GRBLinExpr> vect_sum_x(nb_context,0);
     for (int i = 0; i < nb_context; i++){
       x[i] = model.addVars(input.alphabet.size(), GRB_INTEGER);
@@ -229,12 +234,9 @@ int main(int argc, char *argv[]) {
         model.addConstr(x[i][j] >= 0, "non negative x");
         model.addConstr(x[i][j] <= 1, "x less 1");
       }
-      model.addConstr(vect_sum_x[i] == 1, "replacing # by only one letter");
     }
 
-    cout << "Done with x constraints " << endl;
 
-    GRBVar **y = new GRBVar *[input.P.size()];
     vector<vector<GRBLinExpr>> vect_sum_x_y;
     for (int p = 0; p < input.P.size(); p++) {
       int nb_to_replace = input.P[p].second - input.P[p].first + 1; // t-s+1
@@ -257,7 +259,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    cout << "Done with y constraints " << endl;
 
     vector<GRBLinExpr> vect_lhs;
     // count added critical kmer
@@ -287,9 +288,25 @@ int main(int argc, char *argv[]) {
         }
         next_replacement(J, input.alphabet.size());
       }
-      if (impossible_replacement >= nb_replacement) nb_impossible_replacement+=t-s+1;
+      if (impossible_replacement >= nb_replacement) {
+        cout << s << " " << t << " "+total_context << endl;
+        nb_impossible_replacement+=t-s+1;
+        for (int i = s; i <= t; i++) {
+          input.is_impossible[i]=true;
+        }
+      }
     }
     cout << "Finished counting added critical" << endl;
+
+    for (int i = 0; i < nb_context; i++){
+      if (!input.is_impossible[i]) {
+        model.addConstr(vect_sum_x[i] == 1, "replacing # by only one letter");
+      }
+      else {
+        cout << "Infeasible: " << i << endl;
+        model.addConstr(vect_sum_x[i] == 0, "Not replaced");
+      }
+    }
 
     GRBVar *z = model.addVars(input.nb_critical, GRB_BINARY);
     // Create objective
@@ -325,12 +342,19 @@ int main(int argc, char *argv[]) {
     // Gather solution
     vector<char> replacement;
     for (int i = 0; i < nb_context; i++) {
-      for (int j = 0; j < input.alphabet.size(); j++) {
-        if (x[i][j].get(GRB_DoubleAttr_X)==1){
-          replacement.push_back(input.alphabet[j]);
+      if (input.is_impossible[i]) {
+        replacement.push_back('#');
+        cout << "sum x impossible: " << vect_sum_x[i].getValue() << endl;
+      }
+      else {
+        for (int j = 0; j < input.alphabet.size(); j++) {
+          if (x[i][j].get(GRB_DoubleAttr_X)==1){
+            replacement.push_back(input.alphabet[j]);
+          }
         }
       }
     }
+    cout << "replacement size: " << replacement.size() << " nb_context: " << nb_context << endl;
 
     int sum_z = 0;
     for (int l = 0; l < input.nb_critical; l++) {
