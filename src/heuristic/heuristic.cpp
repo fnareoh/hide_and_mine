@@ -202,7 +202,7 @@ std::string constant_replacement(
   else pos_hashmark = find_hash(hashmark);
   auto it = std::begin(input.alphabet);
   std::string out = hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
-  for (int i = 0; i <= out.size() - k; i++) {
+  for (int i = 0; i <= ((int) out.size() - k); i++) {
     if (input.forbiden_patterns.count(out.substr(i, k)) == 1) return hashmark;
   }
   return out;
@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
 
 #ifdef CLOSE_HASHES
   std::srand(std::time(nullptr));
-  //output(input,"constant",constant_replacement,input_file);
+  output(input,"constant",constant_replacement,input_file);
   output(input,"random",random_replacement,input_file);
 #endif
 
