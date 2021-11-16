@@ -143,6 +143,10 @@ std::string minimize_unfrequent(
   float nb_unfrequent=0;
   if (s.size() >= k) nb_unfrequent = unfrequent_measurement(input, s);
   int min = ((nb_unfrequent == -1) ? 2 * k - 1 : nb_unfrequent);
+  #ifdef CLOSE_HASHES
+  min_char = "#";
+  min=2 * k - 1;
+  #endif
   // for each possible replacement, compute the risk of adding tau-ghost
   // (given by unfrequent_measurement)
 
@@ -174,14 +178,15 @@ std::string minimize_unfrequent(
 std::string random_replacement(
   Input &input, std::string hashmark) {
     assert (input.alphabet.size()>0);
-    int pos_hashmark;
+    int pos_hashmark=-1;
     if (hashmark.size() == 2*k-1) pos_hashmark = k-1;
     else pos_hashmark = find_hash(hashmark);
     int r = rand() % input.alphabet.size(); //not really random
     auto it = std::begin(input.alphabet);
     std::advance(it,r);
-    std::string out = hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
-    for (int i = 0; i <= out.size() - k; i++) {
+    std::string out = hashmark.substr(0, pos_hashmark) + *it;
+    if (pos_hashmark+1 < hashmark.size()) out = out + hashmark.substr(pos_hashmark+1);
+    for (int i = 0; i <= ((int) out.size() - k); i++) {
       if (input.forbiden_patterns.count(out.substr(i, k)) == 1) return hashmark;
     }
     return out;
@@ -197,7 +202,7 @@ std::string constant_replacement(
   else pos_hashmark = find_hash(hashmark);
   auto it = std::begin(input.alphabet);
   std::string out = hashmark.substr(0, pos_hashmark) + *it + hashmark.substr(pos_hashmark+1);
-  for (int i = 0; i <= out.size() - k; i++) {
+  for (int i = 0; i <= ((int) out.size() - k); i++) {
     if (input.forbiden_patterns.count(out.substr(i, k)) == 1) return hashmark;
   }
   return out;
