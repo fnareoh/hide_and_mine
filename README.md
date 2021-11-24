@@ -19,6 +19,6 @@ Both binary files `./src/heuristic/heuristic` and `./src/ilp/build/HM_ilp` take 
 * `data/hashmark_input/name.txt`:The file containing the input with hashmarks to replace (in a single line).
 * `data/sensitive_pattern/name.txt`: The file containing the sensitive patterns (each sensitive pattern must be in a separate line).
 
-# Expermients
+# Experiments
 
 All experiments ran  on  an  Intel  i7-3770  CPU  @  3.40GHz  with  16GB  RAM. Our source code was written in C++, and we used the Gurobi solver  v.  9.0.1  (single-thread  configuration)  to  solve ILP instances.
