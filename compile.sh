@@ -1,3 +1,4 @@
+mkdir -p data/sensitive_pos data/output data/results
 cd src/ilp
 rm -rf build
 cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release
