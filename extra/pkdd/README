@@ -1,0 +1,12 @@
+The folder contains the source code of the algorithms (TPM and BA) presented in the paper: 
+
+String Sanitization: a Combinatorial Approach by Bernardini et al. (ECML/PKDD 2019).
+
+To compile the source code please follow the instructions in file INSTALL.
+
+For convenience, we have included the datasets we used. The datasets are publicly available at: 
+
+http://archive.ics.uci.edu/ml/index.php
+http://bacteria.ensembl.org/Escherichia_coli_str_k_12_substr_mg1655/Info/Index
+http://www.chorochronos.org
+

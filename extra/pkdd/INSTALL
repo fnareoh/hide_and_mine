@@ -1,0 +1,84 @@
+PREREQUISITES
+--------------
+1. igraph library
+This freely available library (https://igraph.org/c/) is used in our program for graph manipulation (in PFS-ALGO). 
+It needs to be installed and configured in:
+(i) makefile
+the line:
+-I/home/k1635844/igraph/include/igraph -L/home/k1635844/igraph/lib
+should be replaced with the path where igraph is installed in your system. 
+(ii)main.cpp and shorten_Z.cpp
+the line:
+#include "/home/k1635844/igraph/include/igraph/igraph.h"
+should be replaced with the path where igraph is installed in your system.
+
+COMPILATION AND EXAMPLE
+------------------------
+The implementation of our apporach as well as the baseline that is used in experiments 
+compiles and runs on a small example with ./compile.txt
+
+As you can see in the makefile, our approach and the baseline compile with g++ -std=c++11 -O3 
+We used g++ version (6.2.0) and it was tested on the following operating systems (MacOS Mojave 10.14.2, Scientific Linux 6.6)
+
+INFORMATION ABOUT THE INPUT AND OUTPUT
+---------------------------------------
+Our approach 
+
+  Input parameters (we refer to the parameters using the example in ./compile.txt):
+
+    test.txt: This is the input string. It should be a single line.
+
+    sen_pos_test.txt: These are the number and positions of sensitive patterns. The first line is the number of sensitive patterns, and the remaining lines are the 
+                  starting positions of the sensitive patterns in the input string.  
+
+    k: This is the parameter k (pattern length). All sensitive patterns must have length k
+
+    tau: This is the parameter tau (see the definitions of tau-ghosts and tau-losts) 
+
+    cost_test.txt: This is the name of a file containing the cost for each item that is given as input to the MCK algorithm.
+
+    weight_test.txt: This is the name of a file containing the weight for each item that is given as input to the MCK algorithm. 
+
+    sen_pattern_test.txt: This is the file containing the sensitive patterns (each sensitive pattern must be in a separate line).
+
+    output_knaapsack_test.txt: This is the output file produced by the MCK algorithm. It is read by main.cpp to produce the final string Z.
+
+  The output is displayed on the screen and includes the sensitive patterns, the input string W, and the output of TFS-ALGO, PFS-ALGO, MCSR-ALGO, respectively.
+  For example, one possible output (recall that PFS-ALGO can produce more than one possible string Y) is the following:
+  ----------RESULTS---HEURISTIC------------
+  Sensitive patterns:
+  [aaaa]
+  [baaa]
+  [bbaa]
+  W : aabaaaababbbaab
+  X : aabaa#aaababbba#baab
+  Y : aaababbba#baabaa
+  Z : aaababbbabaabaa
+
+Baseline 
+
+  Input parameters (we refer to the parameters using the example in ./compile.txt):
+
+    test.txt: This is the input string. It should be a single line.
+
+    k: This is the parameter k (pattern length). All sensitive patterns must have length k
+
+    tau: This is the parameter tau (see the definitions of tau-ghosts and tau-losts)
+
+  The output is displayed on the screen and includes the sensitive patterns, the input string W and the output of baseline (referred to as Z). 
+  For example, one possible output (recall that the baseline breaks ties arbitrarily) is the following:
+  ----------RESULTS---BASELINE------------
+  Sensitive patterns:
+  [aaaa]
+  [baaa]
+  [bbaa]
+  W : aabaaaababbbaab
+  Z : aabaababbbab
+
+Comments and Questions
+----------------------
+Huiping Chen
+huiping.chen@kcl.ac.uk
+
+Grigorios Loukides
+grigorios.loukides@kcl.ac.uk
