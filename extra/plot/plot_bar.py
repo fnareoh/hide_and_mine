@@ -9,10 +9,15 @@ from matplotlib import rc
 
 plt.rcParams.update({"font.size": 16})
 
-
+NB_METHOD = 4
+TIME_STOP = 3550  # Nb seconds after which the ILP is stopped
 file_name = sys.argv[1]
 variation = sys.argv[2]
 metric = sys.argv[3]
+if variation not in ["k", "tau", "n"]:
+    variation = "nb_sensitive"
+if metric != "ghosts":
+    metric = "distortion"
 dataset = file_name.split("/")[-1][:3].upper()
 content = []
 with open(file_name, newline="") as csvfile:
@@ -32,18 +37,24 @@ while index < len(content):
     for i in range(len(content[index])):
         if content[index][i] == "":
             break
-        for j in range(3):
+        for j in range(NB_METHOD):
             if len(data[content[index][i]]) == 0:
-                data[content[index][i]] = [[] for _ in range(3)]
+                data[content[index][i]] = [[] for _ in range(NB_METHOD)]
             if content[index][i] == "time":
                 data[content[index][i]][j].append(float(content[index + j + 1][i]))
             elif content[index][i] == "method":
                 data[content[index][i]][j].append(content[index + j + 1][i])
             else:
                 data[content[index][i]][j].append(int(content[index + j + 1][i]))
-    index += 4
+    index += NB_METHOD + 1
 
 pprint(data)
+data["stopped"] = [False] * len(data["time"][1])
+was_stopped = False
+for i in range(len(data["time"][1])):
+    if data["time"][1][i] >= TIME_STOP:
+        data["stopped"][i] = True
+        was_stopped = True
 
 
 def reorder(list1, list2):
@@ -54,36 +65,27 @@ def reorder(list1, list2):
     return f_list1, f_list2
 
 
-if variation == "k":
-    X = [data["k"][i] for i in range(len(data["k"]))]
-    labels = [
-        str(data["k"][i]) + "\n" + str(data["|S|"][i]) for i in range(len(data["k"]))
-    ]
-elif variation == "tau":
-    X = [data["tau"][i] for i in range(len(data["k"]))]
-    labels = [
-        str(data["tau"][i]) + "\n" + str(data["|S|"][i])
-        for i in range(len(data["tau"]))
-    ]
-else:
-    X = [data["nb_sensitive"][i] for i in range(len(data["k"]))]
-    labels = [
-        str(data["nb_sensitive"][i]) + "\n" + str(data["|S|"][i])
-        for i in range(len(data["nb_sensitive"]))
-    ]
+def pretty_K_plot(v):
+    if v > 1000:
+        return f"{round(v/1000,1)}K"
+    else:
+        return v
 
-if metric == "ghosts":
-    plot = [data["ghosts"][i] for i in range(3)]
-else:
-    plot = [data["distortion"][i] for i in range(3)]
 
-x = np.arange(start=0, stop=3 * len(labels), step=3)  # the label locations
-width = 1.6  # the width of the bars
+X = [data[variation][i] for i in range(len(data[variation]))]
+labels = [
+    str(data[variation][i]) + "\n" + str(pretty_K_plot(data["|S|"][i]))
+    for i in range(len(data[variation]))
+]
+plot = [data[metric][i] for i in range(NB_METHOD)]
+width = 10  # the width of the bars
+x = np.arange(
+    start=0, stop=(NB_METHOD) * width * len(labels), step=(NB_METHOD + 0.5) * width
+)  # the label locations
 
 _, sorted_labels = reorder(X, labels)
-_, plot0 = reorder(X, plot[0])
-_, plot1 = reorder(X, plot[1])
-_, plot2 = reorder(X, plot[2])
+for i in range(NB_METHOD):
+    _, plot[i] = reorder(X, plot[i])
 
 fig, ax = plt.subplots()
 if metric == "distortion":
@@ -92,27 +94,45 @@ if metric == "distortion":
     plt.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
 
 if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
-    rects1 = ax.bar(x - width / 2, plot0, width / 2, label="HEU")
-    rects2 = ax.bar(x, plot1, width / 2, label="CONST")
-    rects3 = ax.bar(x + width / 2, plot2, width / 2, label="RAND")
+    names = ["G-HEU", "G-ILP", "FIXED", "RANDOM"]
+    rects = []
+    for i in range(NB_METHOD):
+        rects.append(
+            ax.bar(
+                x - width * (NB_METHOD / 2) + width / 2 + i * width,
+                plot[i],
+                width,
+                label=names[i],
+            )
+        )
 else:
-    rects1 = ax.bar(x - width / 2, plot0, width / 2, label="TPM")
-    rects2 = ax.bar(x, plot1, width / 2, label="ILP")
-    rects3 = ax.bar(x + width / 2, plot2, width / 2, label="HEU")
+    names = ["TPM", "ILP", "HEU"]
+    rects = []
+    for i in range(NB_METHOD):
+        rects.append(
+            ax.bar(x - width / 2 + i * (width / 2), plot[i], width / 2, label=names[i])
+        )
+
+offset = max(plot[1]) * 0.08
+if was_stopped:
+    _, stopped = reorder(X, data["stopped"])
+    for i in range(len(stopped)):
+        if stopped[i]:
+            plt.plot(x[i] - width / 2, plot[1][i] + offset, "kX")
 
 # Add some text for labels, title and custom x-axis tick labels, etc.
-if metric == "ghosts":
-    ax.set_ylabel("Ghosts")
-else:
-    ax.set_ylabel("Distortion")
+ax.set_ylabel(metric.capitalize())
 
 
-if variation == "k":
-    ax.set_xlabel("k\n|P|")
-elif variation == "tau":
-    ax.set_xlabel("τ" + "\n" + "|P|", fontsize=19)
+sym_nb_hashes = "|P|"
+if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
+    sym_nb_hashes = "δ"
+symbols = {"tau": "τ", "nb_sensitive": "# sensitive patterns"}
+
+if variation in symbols:
+    ax.set_xlabel(symbols[variation] + "\n" + sym_nb_hashes)
 else:
-    ax.set_xlabel("# sensitive patterns\n|P|")
+    ax.set_xlabel(variation + "\n" + sym_nb_hashes)
 
 # ax.set_title(metric.capitalize() + " vs " + variation + " - " + dataset)
 ax.set_xticks(x)
@@ -125,10 +145,10 @@ def autolabel(rects):
     for rect in rects:
         height = rect.get_height()
         ax.annotate(
-            "{}".format(height),
+            "{}".format(pretty_K_plot(height)),
             xy=(rect.get_x() + rect.get_width() / 2, height),
             xytext=(0, -1),  # 3 points vertical offset
-            fontsize=12,
+            fontsize=4,
             # backgroundcolor="w",
             textcoords="offset points",
             ha="center",
@@ -136,24 +156,26 @@ def autolabel(rects):
         )
 
 
-if (
-    metric == "ghosts"
-    and data["method"][0][0] != "minimize_sum_unfrequent_distance_to_tau"
-):
-    autolabel(rects1)
-    autolabel(rects2)
-    autolabel(rects3)
+if metric == "ghosts":
+    for rect in rects:
+        autolabel(rect)
 
 # plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.5), ncol=4)
 # plt.legend().remove()
 plt.legend(prop={"size": 14})
 if metric == "distortion":
     plt.legend(
-        loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.25),
+        ncol=NB_METHOD,
+        prop={"size": 12},
     )
 if data["method"][0][0] == "minimize_sum_unfrequent_distance_to_tau":
     plt.legend(
-        loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=3, prop={"size": 12},
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.25),
+        ncol=NB_METHOD,
+        prop={"size": 12},
     )
 plt.tight_layout()
 plt.gray()
