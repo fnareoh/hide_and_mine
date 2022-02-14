@@ -5,3 +5,5 @@ src/generalized_ilp/build/
 trace.mc
 data
 env/
+*.o
+main
