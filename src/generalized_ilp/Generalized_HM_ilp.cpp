@@ -126,7 +126,6 @@ void output(vector<char> &replacement, Input &input,
     }
     if (c == '#') {
       assert(i_hash <= replacement.size());
-      if (replacement[i_hash]=='#') cout << "nb # not replaced: " << i_hash << endl; 
       os << replacement[i_hash];
       i_hash++;
     } else {
@@ -171,12 +170,12 @@ int count_critical(int p, int r, string replacement, int p_s, int p_t, Input &in
       //count critical due to replacement
       for (int i = max(0,p_t-k+1); i <= min((int)replacement.size()-k,p_s); i++){
         string kmer = replacement.substr(i, k);
+        if (input.forbiden_patterns.count(kmer) == 1) {
+          input.forbiden_replacements.push_back(make_tuple(p, r));
+          return 1;
+        }
         if (is_critical(kmer, input)) {
-          if (input.forbiden_patterns.count(kmer) == 1) {
-            input.forbiden_replacements.push_back(make_tuple(p, r));
-            return 1;
-          }
-        else if (input.criticals_index.count(kmer) == 0) {
+            if (input.criticals_index.count(kmer) == 0) {
             // First time we see this critical kmer
             input.criticals_index[kmer] = input.nb_critical;
             input.list_criticals.push_back(kmer);
@@ -217,7 +216,7 @@ int main(int argc, char *argv[]) {
 
     // Create an empty model
     GRBModel model = GRBModel(env);
-    // model.set("TimeLimit", "200.0");
+    model.set("TimeLimit", "3600.0");
     model.set("Threads", "1");
 
     // Create variables
@@ -289,7 +288,6 @@ int main(int argc, char *argv[]) {
         next_replacement(J, input.alphabet.size());
       }
       if (impossible_replacement >= nb_replacement) {
-        cout << s << " " << t << " "+total_context << endl;
         nb_impossible_replacement+=t-s+1;
         for (int i = s; i <= t; i++) {
           input.is_impossible[i]=true;
@@ -303,7 +301,7 @@ int main(int argc, char *argv[]) {
         model.addConstr(vect_sum_x[i] == 1, "replacing # by only one letter");
       }
       else {
-        cout << "Infeasible: " << i << endl;
+        //cout << "Infeasible: " << i << endl;
         model.addConstr(vect_sum_x[i] == 0, "Not replaced");
       }
     }
@@ -326,35 +324,48 @@ int main(int argc, char *argv[]) {
     model.optimize();
     int status = model.get(GRB_IntAttr_Status);
 
-    if ((status == GRB_INF_OR_UNBD) || (status == GRB_INFEASIBLE) ||
-    (status == GRB_UNBOUNDED)) {
+    if (status == GRB_INFEASIBLE) {
+      cout << "model is infeasible" << endl;
+      model.computeIIS();
+     GRBConstr* c = model.getConstrs();
+     cout << "Trying to remove contraint(s): " << endl;
+     for (int i = 0; i < model.get(GRB_IntAttr_NumConstrs); ++i)
+     {
+       if (c[i].get(GRB_IntAttr_IISConstr) == 1 and c[i].get(GRB_StringAttr_ConstrName)=="replacing # by only one letter")
+       {
+         cout << c[i].get(GRB_StringAttr_ConstrName) << endl;
+         model.remove(c[i]);
+       }
+     }
+     model.optimize();
+     status = model.get(GRB_IntAttr_Status);
+     if (status == GRB_INFEASIBLE) {
+       cout << "Error: Model is still infeasible !" << endl;
+       return 1;
+     }
+   }
+    if ((status == GRB_INF_OR_UNBD) || (status == GRB_UNBOUNDED)) {
       cout << "The model cannot be solved "
       << "because it is infeasible or unbounded" << endl;
-      cout << "Number of context with impossible_replacement: "
-      << nb_impossible_replacement << endl;
+
       return 1;
     }
     if (status != GRB_OPTIMAL) {
       cout << "Optimization was stopped with status " << status << endl;
-      return 1;
+      if (model.get(GRB_IntAttr_SolCount) == 0) return 1;
     }
 
     // Gather solution
-    vector<char> replacement;
+    nb_impossible_replacement=0;
+    vector<char> replacement(nb_context,'#');
     for (int i = 0; i < nb_context; i++) {
-      if (input.is_impossible[i]) {
-        replacement.push_back('#');
-        cout << "sum x impossible: " << vect_sum_x[i].getValue() << endl;
-      }
-      else {
         for (int j = 0; j < input.alphabet.size(); j++) {
           if (x[i][j].get(GRB_DoubleAttr_X)==1){
-            replacement.push_back(input.alphabet[j]);
+            replacement[i]=input.alphabet[j];
           }
         }
-      }
+        if (replacement[i]=='#') nb_impossible_replacement++;
     }
-    cout << "replacement size: " << replacement.size() << " nb_context: " << nb_context << endl;
 
     int sum_z = 0;
     for (int l = 0; l < input.nb_critical; l++) {
