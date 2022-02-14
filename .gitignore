@@ -2,7 +2,6 @@ src/heuristic/heuristic
 *.log
 src/ilp/build
 src/generalized_ilp/build/
-extra/pkdd/
 trace.mc
 data
 env/
