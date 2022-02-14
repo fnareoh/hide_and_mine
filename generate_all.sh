@@ -40,21 +40,22 @@ generate_all() {
 }
 
 generate_SYN(){
-default_input=data/original_data/random20M_char.txt
-name=random20M_char
+default_input=data/original_data/random5M_char.txt
+name=random5M_char
 generic_name=random
 list_input=("data/original_data/random5M_char.txt" "data/original_data/random10M_char.txt" "data/original_data/random15M_char.txt" "data/original_data/random20M_char.txt")
-default_k=5
+default_k=6
 list_k=(3 4 5 6)
-default_tau=10
-list_tau=(5 10 15 20)
-default_S=100
-list_S=(10 100 500 1000)
+default_tau=7
+list_tau=(5 7 10 12 15)
+default_S=700
+list_S=(10 100 500 650 700 1000)
 default_y=100000
-list_y=(100000 100000 100000 100000)
+list_y=(100000 100000 100000 100000 100000 100000)
 
 generate_all
 generate_list_input
+
 }
 
 generate_OLD(){
@@ -62,13 +63,13 @@ default_input=data/original_data/olden_char.txt
 name=olden_char
 list_input=()
 default_k=6
-list_k=(3 4 5 6)
-default_tau=10
+list_k=(3 5 6 7)
+default_tau=5
 list_tau=(3 5 10 15)
-default_S=120
-list_S=(60 120 240 320)
-default_y=500
-list_y=(500 500 500 500)
+default_S=240
+list_S=(60 120 240 480)
+default_y=1000
+list_y=(1000 1000 1000 1000)
 
 generate_all
 }
@@ -79,12 +80,12 @@ name=truck_char
 list_input=()
 default_k=3
 list_k=(2 3 4 5)
-default_tau=20
-list_tau=(5 10 20 30)
-default_S=30
-list_S=(10 30 50 70)
-default_y=40
-list_y=(40 40 140 240)
+default_tau=5
+list_tau=(3 5 7 10)
+default_S=120
+list_S=(40 80 120 160)
+default_y=250
+list_y=(250 250 250 250)
 
 generate_all
 }
@@ -94,11 +95,11 @@ default_input=data/original_data/msnbc_char.txt
 name=msnbc_char
 list_input=()
 default_k=8
-list_k=(3 4 6 8)
+list_k=(4 6 8 10)
 default_tau=200
-list_tau=(100 150 200 300)
-default_S=240
-list_S=(60 120 240 480)
+list_tau=(50 100 200 300)
+default_S=300
+list_S=(100 200 300 600)
 default_y=500
 list_y=(500 500 500 500)
 

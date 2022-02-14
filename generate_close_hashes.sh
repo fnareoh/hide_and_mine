@@ -120,12 +120,12 @@ list_y=(35 35 35 35)
 compile
 #generate $default_k $default_tau $default_input $default_y $default_S
 #generate_all
-list_tau=(10 12 14 16 18)
+list_tau=(10 12 14 16 18 20)
 for i_tau in ${!list_tau[@]}
 do
   generate $default_k ${list_tau[$i_tau]} $default_input $default_y $default_S
 done
-cat data/results/${name}_k_${default_k}_tau_1?_m_${default_S}.txt.comparison > data/results/${name}_k_${default_k}_small_tau.summary
+cat data/results/${name}_k_${default_k}_tau_1?_m_${default_S}.txt.comparison data/results/${name}_k_${default_k}_tau_20_m_${default_S}.txt.comparison > data/results/${name}_k_${default_k}_small_tau.summary
 
 #figures
 }
