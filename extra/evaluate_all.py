@@ -25,7 +25,12 @@ file_name = sys.argv[5]
 method_names = []
 
 if len(sys.argv) == 7:
-    method_names = ["minimize_sum_unfrequent_distance_to_tau", "constant", "random"]
+    method_names = [
+        "minimize_sum_unfrequent_distance_to_tau",
+        "ilp",
+        "constant",
+        "random",
+    ]
 
 else:
     method_names = [
@@ -96,7 +101,7 @@ def evaluate(name, writer):
             # Get all the kmer of context
             while i + k - 1 < len(new_S) and new_S[i + k - 1] != "#":
                 if new_S[i : i + k] in forbiden_patterns:
-                    # print(new_S[i : i + k])
+                    # print(new_S[i : i + k], S[i : i + k], S[: i + k].count("#"))
                     is_working = False
                     nb_sensitive += 1
                 else:
